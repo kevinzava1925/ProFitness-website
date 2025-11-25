@@ -62,9 +62,14 @@ type Trainer = {
   linkedinUrl?: string;
 };
 
+type HeroMedia = {
+  url: string;
+  type: 'image' | 'video';
+};
+
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'classes' | 'events' | 'shop' | 'partners' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities'>('classes');
+  const [activeTab, setActiveTab] = useState<'homepage' | 'classes' | 'events' | 'shop' | 'partners' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities'>('homepage');
   const [classes, setClasses] = useState<ContentItem[]>([]);
   const [events, setEvents] = useState<ContentItem[]>([]);
   const [shopItems, setShopItems] = useState<ContentItem[]>([]);
@@ -74,6 +79,7 @@ export default function AdminDashboard() {
   const [collaborations, setCollaborations] = useState<CollaborationItem[]>([]);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [amenities, setAmenities] = useState<ContentItem[]>([]);
+  const [heroMedia, setHeroMedia] = useState<HeroMedia | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
   const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null);
@@ -131,6 +137,67 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Upload error:', error);
       alert('Failed to upload image. Please try again.');
+      setUploading(false);
+      setUploadField(null);
+    }
+  };
+
+  // Handle hero media upload (image or video)
+  const handleHeroMediaUpload = async (file: File) => {
+    if (!file) return;
+
+    // Check if it's an image or video
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/');
+
+    if (!isImage && !isVideo) {
+      alert('Please upload an image or video file');
+      return;
+    }
+
+    setUploading(true);
+    setUploadField('heroMedia');
+
+    try {
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64Media = reader.result as string;
+          
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ image: base64Media }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Upload failed');
+          }
+
+          const data = await response.json();
+          
+          const newHeroMedia: HeroMedia = {
+            url: data.url,
+            type: isVideo ? 'video' : 'image'
+          };
+
+          setHeroMedia(newHeroMedia);
+          localStorage.setItem("homepageHero", JSON.stringify(newHeroMedia));
+          alert('Homepage hero media updated successfully!');
+        } catch (error) {
+          console.error('Upload error:', error);
+          alert('Failed to upload media. Please try again.');
+        } finally {
+          setUploading(false);
+          setUploadField(null);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload media. Please try again.');
       setUploading(false);
       setUploadField(null);
     }
@@ -313,6 +380,19 @@ export default function AdminDashboard() {
       ];
       setAmenities(defaultAmenities);
       localStorage.setItem("amenities", JSON.stringify(defaultAmenities));
+    }
+
+    // Load homepage hero media
+    const loadedHeroMedia = localStorage.getItem("homepageHero");
+    if (loadedHeroMedia) {
+      setHeroMedia(JSON.parse(loadedHeroMedia));
+    } else {
+      const defaultHero: HeroMedia = {
+        url: "https://ext.same-assets.com/443545936/3789989498.webp",
+        type: "image"
+      };
+      setHeroMedia(defaultHero);
+      localStorage.setItem("homepageHero", JSON.stringify(defaultHero));
     }
   }, []);
 
@@ -626,7 +706,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="border-b border-gray-200">
             <nav className="flex -mb-px overflow-x-auto">
-              {(['classes', 'events', 'shop', 'partners', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities'] as const).map((tab) => (
+              {(['homepage', 'classes', 'events', 'shop', 'partners', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -645,7 +725,102 @@ export default function AdminDashboard() {
 
         {/* Content */}
         <div className="bg-white rounded-lg shadow p-6">
-          {activeTab === 'pricing' ? (
+          {activeTab === 'homepage' ? (
+            <>
+              <div className="mb-6">
+                <h2 className="text-2xl font-bold uppercase mb-4">Homepage Hero Media</h2>
+                <p className="text-gray-600 mb-6">
+                  Upload an image or video to display as the hero section on the homepage. The media will be automatically scaled for both desktop and mobile viewing.
+                </p>
+
+                {heroMedia && (
+                  <div className="mb-6">
+                    <h3 className="text-lg font-semibold mb-3">Current Hero Media</h3>
+                    <div className="border-2 border-gray-200 rounded-lg overflow-hidden max-w-4xl">
+                      {heroMedia.type === 'video' ? (
+                        <video
+                          src={heroMedia.url}
+                          controls
+                          className="w-full h-auto max-h-96 object-cover"
+                        >
+                          Your browser does not support the video tag.
+                        </video>
+                      ) : (
+                        <div className="relative w-full aspect-video">
+                          <Image
+                            src={heroMedia.url}
+                            alt="Homepage Hero"
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      )}
+                      <div className="p-4 bg-gray-50">
+                        <p className="text-sm text-gray-600">
+                          <span className="font-semibold">Type:</span> {heroMedia.type === 'video' ? 'Video' : 'Image'}
+                        </p>
+                        <p className="text-sm text-gray-600 break-all">
+                          <span className="font-semibold">URL:</span> {heroMedia.url}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*,video/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          handleHeroMediaUpload(file);
+                        }
+                      }}
+                      className="hidden"
+                      disabled={uploading}
+                    />
+                    <div className="space-y-4">
+                      {uploading && uploadField === 'heroMedia' ? (
+                        <div className="space-y-2">
+                          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-black mx-auto"></div>
+                          <p className="text-gray-600">Uploading...</p>
+                        </div>
+                      ) : (
+                        <>
+                          <svg className="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                          <div>
+                            <p className="text-lg font-semibold text-gray-700 mb-1">
+                              Click to upload hero media
+                            </p>
+                            <p className="text-sm text-gray-500">
+                              Supports images (JPG, PNG, WEBP) and videos (MP4, WEBM)
+                            </p>
+                            <p className="text-xs text-gray-400 mt-2">
+                              Media will be automatically optimized for desktop and mobile viewing
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </label>
+                </div>
+
+                <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="font-semibold text-blue-900 mb-2">Tips:</h4>
+                  <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+                    <li>For best results, use high-quality images (1920x1080 or larger)</li>
+                    <li>Videos should be in MP4 or WEBM format for best browser compatibility</li>
+                    <li>The media will automatically scale to fit different screen sizes</li>
+                    <li>Videos will autoplay, loop, and be muted for better user experience</li>
+                  </ul>
+                </div>
+              </div>
+            </>
+          ) : activeTab === 'pricing' ? (
             <>
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold uppercase">Manage Pricing Plans</h2>

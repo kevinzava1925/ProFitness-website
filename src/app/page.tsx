@@ -31,6 +31,11 @@ type Trainer = {
   linkedinUrl?: string;
 };
 
+type HeroMedia = {
+  url: string;
+  type: 'image' | 'video';
+};
+
 export default function Home() {
   const [classes, setClasses] = useState<ContentItem[]>([]);
   const [events, setEvents] = useState<ContentItem[]>([]);
@@ -39,9 +44,22 @@ export default function Home() {
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [amenities, setAmenities] = useState<ContentItem[]>([]);
   const [trainerCarouselIndex, setTrainerCarouselIndex] = useState(0);
+  const [heroMedia, setHeroMedia] = useState<HeroMedia | null>(null);
 
   // Load content from localStorage
   useEffect(() => {
+    // Load hero media
+    const loadedHeroMedia = localStorage.getItem("homepageHero");
+    if (loadedHeroMedia) {
+      setHeroMedia(JSON.parse(loadedHeroMedia));
+    } else {
+      // Default hero image
+      setHeroMedia({
+        url: "https://ext.same-assets.com/443545936/3789989498.webp",
+        type: "image"
+      });
+    }
+
     const loadedClasses = localStorage.getItem("classes");
     const loadedEvents = localStorage.getItem("events");
     const loadedShop = localStorage.getItem("shopItems");
@@ -161,13 +179,29 @@ export default function Home() {
       <section className="relative h-[75vh] sm:h-[85vh] lg:h-[90vh] flex items-center justify-start bg-black overflow-hidden">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-4 sm:inset-6 lg:inset-8 rounded-2xl sm:rounded-3xl overflow-hidden">
-            <Image
-              src="https://ext.same-assets.com/443545936/3789989498.webp"
-              alt="Fitness Training"
-              fill
-              className="object-cover opacity-75"
-              priority
-            />
+            {heroMedia && heroMedia.type === 'video' ? (
+              <video
+                autoPlay
+                loop
+                muted
+                playsInline
+                className="absolute inset-0 w-full h-full object-cover opacity-75"
+                style={{ objectFit: 'cover' }}
+              >
+                <source src={heroMedia.url} type="video/mp4" />
+                <source src={heroMedia.url} type="video/webm" />
+                Your browser does not support the video tag.
+              </video>
+            ) : (
+              <Image
+                src={heroMedia?.url || "https://ext.same-assets.com/443545936/3789989498.webp"}
+                alt="Fitness Training"
+                fill
+                className="object-cover opacity-75"
+                priority
+                sizes="100vw"
+              />
+            )}
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-transparent" />
             <div className="absolute inset-0 bg-gradient-to-r from-[#8B6F47]/20 via-transparent to-[#A68B5F]/20" />
           </div>

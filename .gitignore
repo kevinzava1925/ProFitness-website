@@ -45,3 +45,6 @@ ui-debug.log
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# user data (keep private)
+/data/users.json

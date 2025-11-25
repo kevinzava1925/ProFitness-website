@@ -29,6 +29,7 @@ export default function Navigation() {
             <Link href="/about" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">About Us</Link>
             <Link href="/amenities" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Amenities</Link>
             <Link href="/shop" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Shop</Link>
+            <Link href="/register" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Register</Link>
             <Link href="/member-area" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Member Area</Link>
           </div>
 
@@ -58,6 +59,7 @@ export default function Navigation() {
             <Link href="/about" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
             <Link href="/amenities" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Amenities</Link>
             <Link href="/shop" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Shop</Link>
+            <Link href="/register" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Register</Link>
             <Link href="/member-area" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Member Area</Link>
           </div>
         </div>
