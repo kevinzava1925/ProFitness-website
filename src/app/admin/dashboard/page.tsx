@@ -1,0 +1,1550 @@
+'use client';
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
+import Link from "next/link";
+
+type ContentItem = {
+  id: string;
+  name: string;
+  image: string;
+  description?: string;
+  date?: string;
+  price?: string;
+  benefits?: string[];
+  trainer?: string;
+  schedule?: string[];
+  headerImage?: string;
+};
+
+type PricingPlan = {
+  id: string;
+  name: string;
+  price: string;
+  period: string;
+  features: string[];
+  popular?: boolean;
+};
+
+type FooterData = {
+  gymName: string;
+  address: string;
+  city: string;
+  phone: string;
+  email: string;
+  hoursWeekday: string;
+  hoursSaturday: string;
+  hoursSunday: string;
+  instagramUrl: string;
+  facebookUrl: string;
+  youtubeUrl: string;
+  tiktokUrl: string;
+  copyright: string;
+};
+
+type CollaborationItem = {
+  id: string;
+  name: string;
+  image: string;
+  description?: string;
+};
+
+type Trainer = {
+  id: string;
+  name: string;
+  image: string;
+  specialty: string;
+  bio?: string;
+  instagramUrl?: string;
+  facebookUrl?: string;
+  twitterUrl?: string;
+  linkedinUrl?: string;
+};
+
+export default function AdminDashboard() {
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<'classes' | 'events' | 'shop' | 'partners' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities'>('classes');
+  const [classes, setClasses] = useState<ContentItem[]>([]);
+  const [events, setEvents] = useState<ContentItem[]>([]);
+  const [shopItems, setShopItems] = useState<ContentItem[]>([]);
+  const [partners, setPartners] = useState<ContentItem[]>([]);
+  const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
+  const [footerData, setFooterData] = useState<FooterData | null>(null);
+  const [collaborations, setCollaborations] = useState<CollaborationItem[]>([]);
+  const [trainers, setTrainers] = useState<Trainer[]>([]);
+  const [amenities, setAmenities] = useState<ContentItem[]>([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
+  const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null);
+  const [editingFooter, setEditingFooter] = useState(false);
+  const [editingCollaboration, setEditingCollaboration] = useState<CollaborationItem | null>(null);
+  const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadField, setUploadField] = useState<string | null>(null);
+
+  // Image upload function
+  const handleImageUpload = async (file: File, fieldName: string) => {
+    if (!file) return;
+
+    setUploading(true);
+    setUploadField(fieldName);
+
+    try {
+      // Convert file to base64
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        try {
+          const base64Image = reader.result as string;
+          
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ image: base64Image }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Upload failed');
+          }
+
+          const data = await response.json();
+          
+          // Update the appropriate field based on what we're editing
+          if (activeTab === 'trainers' && editingTrainer) {
+            setEditingTrainer({ ...editingTrainer, [fieldName]: data.url });
+          } else if (activeTab === 'collaborations' && editingCollaboration) {
+            setEditingCollaboration({ ...editingCollaboration, [fieldName]: data.url });
+          } else if (editingItem) {
+            setEditingItem({ ...editingItem, [fieldName]: data.url });
+          }
+        } catch (error) {
+          console.error('Upload error:', error);
+          alert('Failed to upload image. Please try again.');
+        } finally {
+          setUploading(false);
+          setUploadField(null);
+        }
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error('Upload error:', error);
+      alert('Failed to upload image. Please try again.');
+      setUploading(false);
+      setUploadField(null);
+    }
+  };
+
+  // Check authentication
+  useEffect(() => {
+    const isAuth = localStorage.getItem("adminAuth");
+    if (!isAuth) {
+      router.push("/admin");
+    }
+  }, [router]);
+
+  // Load data from localStorage
+  useEffect(() => {
+    const loadedClasses = localStorage.getItem("classes");
+    const loadedEvents = localStorage.getItem("events");
+    const loadedShop = localStorage.getItem("shopItems");
+    const loadedPartners = localStorage.getItem("partners");
+
+    if (loadedClasses) setClasses(JSON.parse(loadedClasses));
+    else {
+      // Default classes
+      const defaultClasses = [
+        { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
+        { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
+        { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
+        { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
+        { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
+        { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
+      ];
+      setClasses(defaultClasses);
+      localStorage.setItem("classes", JSON.stringify(defaultClasses));
+    }
+
+    if (loadedEvents) setEvents(JSON.parse(loadedEvents));
+    else {
+      const defaultEvents = [
+        { id: '1', name: 'Intro to Martial Arts for FLINTA*', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'SAMSTAG & SONNTAG', description: 'Das Wochenendseminar von und für FLINTA*s zur Einführung in den Kampfsport.' },
+        { id: '2', name: 'Fightchallenge Round Six', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: '6.12.25', description: 'Wir präsentieren "FightChallenge - Round Six' },
+        { id: '3', name: 'Defensive Boxing Wrestling for MMA', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: '13.12.25', description: 'Join and learn all about boxing and wrestling for MMA.' }
+      ];
+      setEvents(defaultEvents);
+      localStorage.setItem("events", JSON.stringify(defaultEvents));
+    }
+
+    if (loadedShop) setShopItems(JSON.parse(loadedShop));
+    else {
+      const defaultShop = [
+        { id: '1', name: 'Cap', image: 'https://ext.same-assets.com/443545936/1859491465.webp' },
+        { id: '2', name: 'Duffle Bag', image: 'https://ext.same-assets.com/443545936/3860077197.webp' },
+        { id: '3', name: 'T-Shirt', image: 'https://ext.same-assets.com/443545936/2710426474.webp' },
+        { id: '4', name: 'Hoodie', image: 'https://ext.same-assets.com/443545936/480816838.webp' }
+      ];
+      setShopItems(defaultShop);
+      localStorage.setItem("shopItems", JSON.stringify(defaultShop));
+    }
+
+    if (loadedPartners) setPartners(JSON.parse(loadedPartners));
+    else {
+      const defaultPartners = [
+        { id: '1', name: 'GEMMAF', image: 'https://ext.same-assets.com/443545936/2709833716.webp' },
+        { id: '2', name: 'AMMAG', image: 'https://ext.same-assets.com/443545936/59465891.webp' }
+      ];
+      setPartners(defaultPartners);
+      localStorage.setItem("partners", JSON.stringify(defaultPartners));
+    }
+
+    // Load pricing plans
+    const loadedPricing = localStorage.getItem("pricingPlans");
+    if (loadedPricing) {
+      setPricingPlans(JSON.parse(loadedPricing));
+    } else {
+      const defaultPricing: PricingPlan[] = [
+        {
+          id: '1',
+          name: 'Basic',
+          price: '$49',
+          period: 'per month',
+          features: ['Access to all group classes', 'Gym equipment access', 'Locker room facilities', 'Free parking']
+        },
+        {
+          id: '2',
+          name: 'Premium',
+          price: '$79',
+          period: 'per month',
+          features: ['Everything in Basic', 'Priority class booking', '1 personal training session/month', 'Nutrition consultation', 'Guest passes (2/month)'],
+          popular: true
+        },
+        {
+          id: '3',
+          name: 'Elite',
+          price: '$129',
+          period: 'per month',
+          features: ['Everything in Premium', 'Unlimited personal training', '24/7 gym access', 'Towel service', 'Unlimited guest passes', 'Complimentary supplements']
+        }
+      ];
+      setPricingPlans(defaultPricing);
+      localStorage.setItem("pricingPlans", JSON.stringify(defaultPricing));
+    }
+
+    // Load footer data
+    const loadedFooter = localStorage.getItem("footerData");
+    if (loadedFooter) {
+      setFooterData(JSON.parse(loadedFooter));
+    } else {
+      const defaultFooter: FooterData = {
+        gymName: 'ProFitness Gym',
+        address: '123 Fitness Street',
+        city: 'City, State 12345',
+        phone: '(123) 456-7890',
+        email: 'info@profitness.com',
+        hoursWeekday: '06 AM - 10 PM',
+        hoursSaturday: '08 AM - 8 PM',
+        hoursSunday: '09 AM - 6 PM',
+        instagramUrl: '#',
+        facebookUrl: '#',
+        youtubeUrl: '#',
+        tiktokUrl: '#',
+        copyright: 'Copyright ProFitness Gym 2025'
+      };
+      setFooterData(defaultFooter);
+      localStorage.setItem("footerData", JSON.stringify(defaultFooter));
+    }
+
+    // Load collaborations
+    const loadedCollaborations = localStorage.getItem("collaborations");
+    if (loadedCollaborations) {
+      setCollaborations(JSON.parse(loadedCollaborations));
+    } else {
+      const defaultCollaborations: CollaborationItem[] = [
+        { id: '1', name: 'Fitness Brand A', image: 'https://ext.same-assets.com/443545936/1859491465.webp', description: 'Premium fitness equipment and gear' },
+        { id: '2', name: 'Nutrition Company B', image: 'https://ext.same-assets.com/443545936/3860077197.webp', description: 'Health supplements and nutrition products' }
+      ];
+      setCollaborations(defaultCollaborations);
+      localStorage.setItem("collaborations", JSON.stringify(defaultCollaborations));
+    }
+
+    // Load trainers
+    const loadedTrainers = localStorage.getItem("trainers");
+    if (loadedTrainers) {
+      setTrainers(JSON.parse(loadedTrainers));
+    } else {
+      const defaultTrainers: Trainer[] = [
+        { 
+          id: '1', 
+          name: 'John Smith', 
+          image: 'https://ext.same-assets.com/443545936/1729744263.webp', 
+          specialty: 'Strength Training',
+          bio: 'With over 10 years of experience in strength training and bodybuilding, John helps clients build muscle and achieve their fitness goals.',
+          instagramUrl: '#',
+          facebookUrl: '#'
+        },
+        { 
+          id: '2', 
+          name: 'Sarah Johnson', 
+          image: 'https://ext.same-assets.com/443545936/691732246.webp', 
+          specialty: 'Yoga & Flexibility',
+          bio: 'Certified yoga instructor specializing in flexibility, mobility, and mindfulness practices for overall wellness.',
+          instagramUrl: '#',
+          linkedinUrl: '#'
+        }
+      ];
+      setTrainers(defaultTrainers);
+      localStorage.setItem("trainers", JSON.stringify(defaultTrainers));
+    }
+
+    // Load amenities
+    const loadedAmenities = localStorage.getItem("amenities");
+    if (loadedAmenities) {
+      setAmenities(JSON.parse(loadedAmenities));
+    } else {
+      const defaultAmenities: ContentItem[] = [
+        { id: '1', name: 'Locker Rooms', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Spacious locker rooms with showers and changing facilities' },
+        { id: '2', name: 'Cardio Equipment', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
+        { id: '3', name: 'Free Weights', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
+        { id: '4', name: 'Group Classes', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Multiple group fitness studios for various classes' },
+        { id: '5', name: 'Personal Training', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Private training areas with certified personal trainers' },
+        { id: '6', name: 'Sauna & Steam Room', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Relaxation facilities for post-workout recovery' }
+      ];
+      setAmenities(defaultAmenities);
+      localStorage.setItem("amenities", JSON.stringify(defaultAmenities));
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("adminAuth");
+    router.push("/admin");
+  };
+
+  const getCurrentItems = () => {
+    switch (activeTab) {
+      case 'classes': return classes;
+      case 'events': return events;
+      case 'shop': return shopItems;
+      case 'partners': return partners;
+      case 'amenities': return amenities;
+      default: return [];
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    if (!confirm('Are you sure you want to delete this item?')) return;
+
+    const updateState = (items: ContentItem[]) => items.filter(item => item.id !== id);
+
+    switch (activeTab) {
+      case 'classes':
+        const newClasses = updateState(classes);
+        setClasses(newClasses);
+        localStorage.setItem("classes", JSON.stringify(newClasses));
+        break;
+      case 'events':
+        const newEvents = updateState(events);
+        setEvents(newEvents);
+        localStorage.setItem("events", JSON.stringify(newEvents));
+        break;
+      case 'shop':
+        const newShop = updateState(shopItems);
+        setShopItems(newShop);
+        localStorage.setItem("shopItems", JSON.stringify(newShop));
+        break;
+      case 'partners':
+        const newPartners = updateState(partners);
+        setPartners(newPartners);
+        localStorage.setItem("partners", JSON.stringify(newPartners));
+        break;
+      case 'amenities':
+        const newAmenities = updateState(amenities);
+        setAmenities(newAmenities);
+        localStorage.setItem("amenities", JSON.stringify(newAmenities));
+        break;
+    }
+  };
+
+  const handleEdit = (item: ContentItem) => {
+    setEditingItem(item);
+    setIsEditing(true);
+  };
+
+  const handleAdd = () => {
+    setEditingItem({
+      id: Date.now().toString(),
+      name: '',
+      image: '',
+      description: '',
+      date: '',
+      benefits: [],
+      trainer: '',
+      schedule: [],
+      headerImage: ''
+    });
+    setIsEditing(true);
+  };
+
+  const handleSave = () => {
+    if (!editingItem) return;
+
+    const updateItems = (items: ContentItem[]) => {
+      const exists = items.find(item => item.id === editingItem.id);
+      if (exists) {
+        return items.map(item => item.id === editingItem.id ? editingItem : item);
+      } else {
+        return [...items, editingItem];
+      }
+    };
+
+    switch (activeTab) {
+      case 'classes':
+        const newClasses = updateItems(classes);
+        setClasses(newClasses);
+        localStorage.setItem("classes", JSON.stringify(newClasses));
+        break;
+      case 'events':
+        const newEvents = updateItems(events);
+        setEvents(newEvents);
+        localStorage.setItem("events", JSON.stringify(newEvents));
+        break;
+      case 'shop':
+        const newShop = updateItems(shopItems);
+        setShopItems(newShop);
+        localStorage.setItem("shopItems", JSON.stringify(newShop));
+        break;
+      case 'partners':
+        const newPartners = updateItems(partners);
+        setPartners(newPartners);
+        localStorage.setItem("partners", JSON.stringify(newPartners));
+        break;
+      case 'amenities':
+        const newAmenities = updateItems(amenities);
+        setAmenities(newAmenities);
+        localStorage.setItem("amenities", JSON.stringify(newAmenities));
+        break;
+    }
+
+    setIsEditing(false);
+    setEditingItem(null);
+  };
+
+  const handleDeletePlan = (id: string) => {
+    if (!confirm('Are you sure you want to delete this pricing plan?')) return;
+    const newPlans = pricingPlans.filter(plan => plan.id !== id);
+    setPricingPlans(newPlans);
+    localStorage.setItem("pricingPlans", JSON.stringify(newPlans));
+  };
+
+  const handleAddPlan = () => {
+    setEditingPlan({
+      id: Date.now().toString(),
+      name: '',
+      price: '',
+      period: 'per month',
+      features: [],
+      popular: false
+    });
+    setIsEditing(true);
+  };
+
+  const handleEditPlan = (plan: PricingPlan) => {
+    setEditingPlan(plan);
+    setIsEditing(true);
+  };
+
+  const handleSavePlan = () => {
+    if (!editingPlan) return;
+
+    const exists = pricingPlans.find(plan => plan.id === editingPlan.id);
+    let newPlans: PricingPlan[];
+    
+    if (exists) {
+      newPlans = pricingPlans.map(plan => plan.id === editingPlan.id ? editingPlan : plan);
+    } else {
+      newPlans = [...pricingPlans, editingPlan];
+    }
+
+    setPricingPlans(newPlans);
+    localStorage.setItem("pricingPlans", JSON.stringify(newPlans));
+    setIsEditing(false);
+    setEditingPlan(null);
+  };
+
+  const handleSaveFooter = () => {
+    if (!footerData) return;
+    localStorage.setItem("footerData", JSON.stringify(footerData));
+    setEditingFooter(false);
+  };
+
+  const addFeatureToPlan = () => {
+    if (!editingPlan) return;
+    setEditingPlan({
+      ...editingPlan,
+      features: [...editingPlan.features, '']
+    });
+  };
+
+  const updatePlanFeature = (index: number, value: string) => {
+    if (!editingPlan) return;
+    const newFeatures = [...editingPlan.features];
+    newFeatures[index] = value;
+    setEditingPlan({
+      ...editingPlan,
+      features: newFeatures
+    });
+  };
+
+  const removePlanFeature = (index: number) => {
+    if (!editingPlan) return;
+    const newFeatures = editingPlan.features.filter((_, i) => i !== index);
+    setEditingPlan({
+      ...editingPlan,
+      features: newFeatures
+    });
+  };
+
+  // Collaboration handlers
+  const handleAddCollaboration = () => {
+    setEditingCollaboration({
+      id: Date.now().toString(),
+      name: '',
+      image: '',
+      description: ''
+    });
+    setIsEditing(true);
+  };
+
+  const handleEditCollaboration = (collab: CollaborationItem) => {
+    setEditingCollaboration(collab);
+    setIsEditing(true);
+  };
+
+  const handleSaveCollaboration = () => {
+    if (!editingCollaboration) return;
+    const exists = collaborations.find(c => c.id === editingCollaboration.id);
+    let newCollaborations: CollaborationItem[];
+    
+    if (exists) {
+      newCollaborations = collaborations.map(c => c.id === editingCollaboration.id ? editingCollaboration : c);
+    } else {
+      newCollaborations = [...collaborations, editingCollaboration];
+    }
+
+    setCollaborations(newCollaborations);
+    localStorage.setItem("collaborations", JSON.stringify(newCollaborations));
+    setIsEditing(false);
+    setEditingCollaboration(null);
+  };
+
+  const handleDeleteCollaboration = (id: string) => {
+    if (!confirm('Are you sure you want to delete this collaboration?')) return;
+    const newCollaborations = collaborations.filter(c => c.id !== id);
+    setCollaborations(newCollaborations);
+    localStorage.setItem("collaborations", JSON.stringify(newCollaborations));
+  };
+
+  // Trainer handlers
+  const handleAddTrainer = () => {
+    setEditingTrainer({
+      id: Date.now().toString(),
+      name: '',
+      image: '',
+      specialty: '',
+      bio: '',
+      instagramUrl: '',
+      facebookUrl: '',
+      twitterUrl: '',
+      linkedinUrl: ''
+    });
+    setIsEditing(true);
+  };
+
+  const handleEditTrainer = (trainer: Trainer) => {
+    setEditingTrainer(trainer);
+    setIsEditing(true);
+  };
+
+  const handleSaveTrainer = () => {
+    if (!editingTrainer) return;
+    const exists = trainers.find(t => t.id === editingTrainer.id);
+    let newTrainers: Trainer[];
+    
+    if (exists) {
+      newTrainers = trainers.map(t => t.id === editingTrainer.id ? editingTrainer : t);
+    } else {
+      newTrainers = [...trainers, editingTrainer];
+    }
+
+    setTrainers(newTrainers);
+    localStorage.setItem("trainers", JSON.stringify(newTrainers));
+    setIsEditing(false);
+    setEditingTrainer(null);
+  };
+
+  const handleDeleteTrainer = (id: string) => {
+    if (!confirm('Are you sure you want to delete this trainer?')) return;
+    const newTrainers = trainers.filter(t => t.id !== id);
+    setTrainers(newTrainers);
+    localStorage.setItem("trainers", JSON.stringify(newTrainers));
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {/* Header */}
+      <header className="bg-black text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Image
+                src="https://res.cloudinary.com/dvdogsvf6/image/upload/v1763919430/Pro_Fitness_logo_ldvjyt.png"
+                alt="ProFitness"
+                width={180}
+                height={72}
+                className="h-12 sm:h-16 w-auto brightness-0 invert"
+              />
+              <span className="text-sm font-semibold uppercase">Admin Dashboard</span>
+            </div>
+            <div className="flex items-center gap-4">
+              <Link href="/" className="text-sm hover:text-gray-300 transition-colors uppercase">
+                View Site
+              </Link>
+              <button
+                onClick={handleLogout}
+                className="bg-white text-black px-4 py-2 text-sm font-bold uppercase hover:bg-gray-200 transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Tabs */}
+        <div className="bg-white rounded-lg shadow mb-6">
+          <div className="border-b border-gray-200">
+            <nav className="flex -mb-px overflow-x-auto">
+              {(['classes', 'events', 'shop', 'partners', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`px-6 py-4 text-sm font-semibold uppercase border-b-2 transition-colors whitespace-nowrap ${
+                    activeTab === tab
+                      ? 'border-black text-black'
+                      : 'border-transparent text-gray-500 hover:text-black hover:border-gray-300'
+                  }`}
+                >
+                  {tab}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="bg-white rounded-lg shadow p-6">
+          {activeTab === 'pricing' ? (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold uppercase">Manage Pricing Plans</h2>
+                <button
+                  onClick={handleAddPlan}
+                  className="bg-black text-white px-6 py-2 font-bold text-sm uppercase hover:bg-gray-800 transition-colors"
+                >
+                  Add New Plan
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {pricingPlans.map((plan) => (
+                  <div key={plan.id} className={`border-2 rounded-lg overflow-hidden ${plan.popular ? 'border-black' : 'border-gray-200'}`}>
+                    {plan.popular && (
+                      <div className="bg-black text-white text-center py-2 text-xs font-bold uppercase">
+                        Most Popular
+                      </div>
+                    )}
+                    <div className="p-6">
+                      <h3 className="text-2xl font-black uppercase mb-2">{plan.name}</h3>
+                      <div className="mb-4">
+                        <span className="text-3xl font-black">{plan.price}</span>
+                        <span className="text-gray-600 ml-2 text-sm">{plan.period}</span>
+                      </div>
+                      <ul className="space-y-2 mb-4 text-sm">
+                        {plan.features.map((feature, idx) => (
+                          <li key={idx} className="flex items-start">
+                            <span className="mr-2">✓</span>
+                            <span className="text-gray-700">{feature}</span>
+                          </li>
+                        ))}
+                      </ul>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditPlan(plan)}
+                          className="flex-1 bg-black text-white px-4 py-2 text-sm font-bold uppercase hover:bg-gray-800 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeletePlan(plan.id)}
+                          className="flex-1 bg-red-600 text-white px-4 py-2 text-sm font-bold uppercase hover:bg-red-700 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : activeTab === 'footer' ? (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold uppercase">Manage Footer</h2>
+                <button
+                  onClick={() => setEditingFooter(true)}
+                  className="bg-black text-white px-6 py-2 font-bold text-sm uppercase hover:bg-gray-800 transition-colors"
+                >
+                  Edit Footer
+                </button>
+              </div>
+
+              {footerData && (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className="font-bold mb-2">Gym Name</h3>
+                      <p className="text-gray-700">{footerData.gymName}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-bold mb-2">Address</h3>
+                      <p className="text-gray-700">{footerData.address}</p>
+                      <p className="text-gray-700">{footerData.city}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-bold mb-2">Phone</h3>
+                      <p className="text-gray-700">{footerData.phone}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-bold mb-2">Email</h3>
+                      <p className="text-gray-700">{footerData.email}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-bold mb-2">Weekday Hours</h3>
+                      <p className="text-gray-700">{footerData.hoursWeekday}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-bold mb-2">Saturday Hours</h3>
+                      <p className="text-gray-700">{footerData.hoursSaturday}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-bold mb-2">Sunday Hours</h3>
+                      <p className="text-gray-700">{footerData.hoursSunday}</p>
+                    </div>
+                    <div>
+                      <h3 className="font-bold mb-2">Copyright</h3>
+                      <p className="text-gray-700">{footerData.copyright}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </>
+          ) : activeTab === 'collaborations' ? (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold uppercase">Manage Collaborations</h2>
+                <button
+                  onClick={handleAddCollaboration}
+                  className="bg-black text-white px-6 py-2 font-bold text-sm uppercase hover:bg-gray-800 transition-colors"
+                >
+                  Add New
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {collaborations.map((collab) => (
+                  <div key={collab.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="relative aspect-video bg-gray-100">
+                      <Image
+                        src={collab.image}
+                        alt={collab.name}
+                        fill
+                        className="object-contain p-4"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg mb-2">{collab.name}</h3>
+                      {collab.description && <p className="text-sm text-gray-600 mb-4">{collab.description}</p>}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditCollaboration(collab)}
+                          className="flex-1 bg-black text-white px-4 py-2 text-sm font-bold uppercase hover:bg-gray-800 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteCollaboration(collab.id)}
+                          className="flex-1 bg-red-600 text-white px-4 py-2 text-sm font-bold uppercase hover:bg-red-700 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : activeTab === 'trainers' ? (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold uppercase">Manage Personal Trainers</h2>
+                <button
+                  onClick={handleAddTrainer}
+                  className="bg-black text-white px-6 py-2 font-bold text-sm uppercase hover:bg-gray-800 transition-colors"
+                >
+                  Add New
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {trainers.map((trainer) => (
+                  <div key={trainer.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="relative aspect-square bg-gray-100">
+                      <Image
+                        src={trainer.image}
+                        alt={trainer.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg mb-1">{trainer.name}</h3>
+                      <p className="text-sm text-profitness-brown font-semibold mb-2">{trainer.specialty}</p>
+                      {trainer.bio && <p className="text-sm text-gray-600 mb-4 line-clamp-2">{trainer.bio}</p>}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditTrainer(trainer)}
+                          className="flex-1 bg-black text-white px-4 py-2 text-sm font-bold uppercase hover:bg-gray-800 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTrainer(trainer.id)}
+                          className="flex-1 bg-red-600 text-white px-4 py-2 text-sm font-bold uppercase hover:bg-red-700 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold uppercase">Manage {activeTab}</h2>
+                <button
+                  onClick={handleAdd}
+                  className="bg-black text-white px-6 py-2 font-bold text-sm uppercase hover:bg-gray-800 transition-colors"
+                >
+                  Add New
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {getCurrentItems().map((item) => (
+                  <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="relative aspect-video bg-gray-100">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg mb-2">{item.name}</h3>
+                      {item.date && <p className="text-sm text-gray-600 mb-2">{item.date}</p>}
+                      {item.description && <p className="text-sm text-gray-600 mb-4">{item.description}</p>}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="flex-1 bg-black text-white px-4 py-2 text-sm font-bold uppercase hover:bg-gray-800 transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="flex-1 bg-red-600 text-white px-4 py-2 text-sm font-bold uppercase hover:bg-red-700 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Edit Modal for Collaborations */}
+      {isEditing && editingCollaboration && activeTab === 'collaborations' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold uppercase mb-6">
+              {editingCollaboration.id && collaborations.find(c => c.id === editingCollaboration.id) ? 'Edit' : 'Add'} Collaboration
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Brand Name</label>
+                <input
+                  type="text"
+                  value={editingCollaboration.name}
+                  onChange={(e) => setEditingCollaboration({ ...editingCollaboration, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Brand Image URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={editingCollaboration.image}
+                    onChange={(e) => setEditingCollaboration({ ...editingCollaboration, image: e.target.value })}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="https://... or upload image"
+                  />
+                  <label className="bg-black text-white px-4 py-2 rounded cursor-pointer hover:bg-gray-800 transition-colors whitespace-nowrap">
+                    {uploading && uploadField === 'image' ? 'Uploading...' : 'Upload'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(file, 'image');
+                      }}
+                      disabled={uploading}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Description</label>
+                <textarea
+                  value={editingCollaboration.description || ''}
+                  onChange={(e) => setEditingCollaboration({ ...editingCollaboration, description: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  rows={3}
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={handleSaveCollaboration}
+                className="flex-1 bg-black text-white px-6 py-3 font-bold uppercase hover:bg-gray-800 transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditingCollaboration(null);
+                }}
+                className="flex-1 bg-gray-200 text-black px-6 py-3 font-bold uppercase hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal for Trainers */}
+      {isEditing && editingTrainer && activeTab === 'trainers' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold uppercase mb-6">
+              {editingTrainer.id && trainers.find(t => t.id === editingTrainer.id) ? 'Edit' : 'Add'} Trainer
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Name</label>
+                <input
+                  type="text"
+                  value={editingTrainer.name}
+                  onChange={(e) => setEditingTrainer({ ...editingTrainer, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Photo URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={editingTrainer.image}
+                    onChange={(e) => setEditingTrainer({ ...editingTrainer, image: e.target.value })}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="https://... or upload image"
+                  />
+                  <label className="bg-black text-white px-4 py-2 rounded cursor-pointer hover:bg-gray-800 transition-colors whitespace-nowrap">
+                    {uploading && uploadField === 'image' ? 'Uploading...' : 'Upload'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(file, 'image');
+                      }}
+                      disabled={uploading}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Specialty</label>
+                <input
+                  type="text"
+                  value={editingTrainer.specialty}
+                  onChange={(e) => setEditingTrainer({ ...editingTrainer, specialty: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  placeholder="e.g., Strength Training"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Bio</label>
+                <textarea
+                  value={editingTrainer.bio || ''}
+                  onChange={(e) => setEditingTrainer({ ...editingTrainer, bio: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  rows={4}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Instagram URL</label>
+                  <input
+                    type="url"
+                    value={editingTrainer.instagramUrl || ''}
+                    onChange={(e) => setEditingTrainer({ ...editingTrainer, instagramUrl: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="https://instagram.com/..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Facebook URL</label>
+                  <input
+                    type="url"
+                    value={editingTrainer.facebookUrl || ''}
+                    onChange={(e) => setEditingTrainer({ ...editingTrainer, facebookUrl: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="https://facebook.com/..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Twitter URL</label>
+                  <input
+                    type="url"
+                    value={editingTrainer.twitterUrl || ''}
+                    onChange={(e) => setEditingTrainer({ ...editingTrainer, twitterUrl: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="https://twitter.com/..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">LinkedIn URL</label>
+                  <input
+                    type="url"
+                    value={editingTrainer.linkedinUrl || ''}
+                    onChange={(e) => setEditingTrainer({ ...editingTrainer, linkedinUrl: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="https://linkedin.com/..."
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={handleSaveTrainer}
+                className="flex-1 bg-black text-white px-6 py-3 font-bold uppercase hover:bg-gray-800 transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditingTrainer(null);
+                }}
+                className="flex-1 bg-gray-200 text-black px-6 py-3 font-bold uppercase hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal for Content Items */}
+      {isEditing && editingItem && activeTab !== 'pricing' && activeTab !== 'footer' && activeTab !== 'collaborations' && activeTab !== 'trainers' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold uppercase mb-6">
+              {editingItem.id && getCurrentItems().find(i => i.id === editingItem.id) ? 'Edit' : 'Add'} {activeTab.slice(0, -1)}
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Name</label>
+                <input
+                  type="text"
+                  value={editingItem.name}
+                  onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Image URL</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={editingItem.image}
+                    onChange={(e) => setEditingItem({ ...editingItem, image: e.target.value })}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="https://... or upload image"
+                  />
+                  <label className="bg-black text-white px-4 py-2 rounded cursor-pointer hover:bg-gray-800 transition-colors whitespace-nowrap">
+                    {uploading && uploadField === 'image' ? 'Uploading...' : 'Upload'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleImageUpload(file, 'image');
+                      }}
+                      disabled={uploading}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              {activeTab === 'shop' && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Price</label>
+                  <input
+                    type="text"
+                    value={editingItem.price || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, price: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="e.g., $29.99"
+                  />
+                </div>
+              )}
+
+              {(activeTab === 'events' || activeTab === 'classes' || activeTab === 'amenities') && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Description</label>
+                  <textarea
+                    value={editingItem.description || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    rows={3}
+                  />
+                </div>
+              )}
+
+              {activeTab === 'classes' && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Header Image URL (for detail page)</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={editingItem.headerImage || ''}
+                        onChange={(e) => setEditingItem({ ...editingItem, headerImage: e.target.value })}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                        placeholder="https://... (optional, uses main image if not provided)"
+                      />
+                      <label className="bg-black text-white px-4 py-2 rounded cursor-pointer hover:bg-gray-800 transition-colors whitespace-nowrap">
+                        {uploading && uploadField === 'headerImage' ? 'Uploading...' : 'Upload'}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (file) handleImageUpload(file, 'headerImage');
+                          }}
+                          disabled={uploading}
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Trainer</label>
+                    <input
+                      type="text"
+                      value={editingItem.trainer || ''}
+                      onChange={(e) => setEditingItem({ ...editingItem, trainer: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                      placeholder="e.g., John Smith"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Benefits (one per line)</label>
+                    <textarea
+                      value={(editingItem.benefits || []).join('\n')}
+                      onChange={(e) => {
+                        const benefits = e.target.value.split('\n').filter(b => b.trim());
+                        setEditingItem({ ...editingItem, benefits });
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                      rows={4}
+                      placeholder="Improved strength&#10;Better flexibility&#10;Increased endurance"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Enter each benefit on a new line</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Schedule (one per line)</label>
+                    <textarea
+                      value={(editingItem.schedule || []).join('\n')}
+                      onChange={(e) => {
+                        const schedule = e.target.value.split('\n').filter(s => s.trim());
+                        setEditingItem({ ...editingItem, schedule });
+                      }}
+                      className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                      rows={4}
+                      placeholder="Monday: 6:00 AM - 7:00 AM&#10;Wednesday: 6:00 AM - 7:00 AM&#10;Friday: 6:00 AM - 7:00 AM"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Enter each schedule item on a new line</p>
+                  </div>
+                </>
+              )}
+
+              {activeTab === 'events' && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Date</label>
+                  <input
+                    type="text"
+                    value={editingItem.date || ''}
+                    onChange={(e) => setEditingItem({ ...editingItem, date: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={handleSave}
+                className="flex-1 bg-black text-white px-6 py-3 font-bold uppercase hover:bg-gray-800 transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditingItem(null);
+                }}
+                className="flex-1 bg-gray-200 text-black px-6 py-3 font-bold uppercase hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal for Pricing Plans */}
+      {isEditing && editingPlan && activeTab === 'pricing' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold uppercase mb-6">
+              {editingPlan.id && pricingPlans.find(p => p.id === editingPlan.id) ? 'Edit' : 'Add'} Pricing Plan
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Plan Name</label>
+                <input
+                  type="text"
+                  value={editingPlan.name}
+                  onChange={(e) => setEditingPlan({ ...editingPlan, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Price</label>
+                  <input
+                    type="text"
+                    value={editingPlan.price}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, price: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="$49"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Period</label>
+                  <input
+                    type="text"
+                    value={editingPlan.period}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, period: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="per month"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium">Features</label>
+                  <button
+                    type="button"
+                    onClick={addFeatureToPlan}
+                    className="text-sm text-black font-semibold hover:underline"
+                  >
+                    + Add Feature
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {editingPlan.features.map((feature, index) => (
+                    <div key={index} className="flex gap-2">
+                      <input
+                        type="text"
+                        value={feature}
+                        onChange={(e) => updatePlanFeature(index, e.target.value)}
+                        className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                        placeholder="Feature description"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removePlanFeature(index)}
+                        className="bg-red-600 text-white px-4 py-2 font-bold text-sm uppercase hover:bg-red-700 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={editingPlan.popular || false}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, popular: e.target.checked })}
+                    className="w-4 h-4"
+                  />
+                  <span className="text-sm font-medium">Mark as "Most Popular"</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={handleSavePlan}
+                className="flex-1 bg-black text-white px-6 py-3 font-bold uppercase hover:bg-gray-800 transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditingPlan(null);
+                }}
+                className="flex-1 bg-gray-200 text-black px-6 py-3 font-bold uppercase hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal for Footer */}
+      {editingFooter && footerData && activeTab === 'footer' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold uppercase mb-6">Edit Footer Information</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Gym Name</label>
+                <input
+                  type="text"
+                  value={footerData.gymName}
+                  onChange={(e) => setFooterData({ ...footerData, gymName: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Address</label>
+                <input
+                  type="text"
+                  value={footerData.address}
+                  onChange={(e) => setFooterData({ ...footerData, address: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">City, State, ZIP</label>
+                <input
+                  type="text"
+                  value={footerData.city}
+                  onChange={(e) => setFooterData({ ...footerData, city: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Phone</label>
+                  <input
+                    type="text"
+                    value={footerData.phone}
+                    onChange={(e) => setFooterData({ ...footerData, phone: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Email</label>
+                  <input
+                    type="email"
+                    value={footerData.email}
+                    onChange={(e) => setFooterData({ ...footerData, email: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Weekday Hours</label>
+                  <input
+                    type="text"
+                    value={footerData.hoursWeekday}
+                    onChange={(e) => setFooterData({ ...footerData, hoursWeekday: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="06 AM - 10 PM"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Saturday Hours</label>
+                  <input
+                    type="text"
+                    value={footerData.hoursSaturday}
+                    onChange={(e) => setFooterData({ ...footerData, hoursSaturday: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="08 AM - 8 PM"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Sunday Hours</label>
+                  <input
+                    type="text"
+                    value={footerData.hoursSunday}
+                    onChange={(e) => setFooterData({ ...footerData, hoursSunday: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="09 AM - 6 PM"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Instagram URL</label>
+                  <input
+                    type="url"
+                    value={footerData.instagramUrl}
+                    onChange={(e) => setFooterData({ ...footerData, instagramUrl: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="https://instagram.com/..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Facebook URL</label>
+                  <input
+                    type="url"
+                    value={footerData.facebookUrl}
+                    onChange={(e) => setFooterData({ ...footerData, facebookUrl: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="https://facebook.com/..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">YouTube URL</label>
+                  <input
+                    type="url"
+                    value={footerData.youtubeUrl}
+                    onChange={(e) => setFooterData({ ...footerData, youtubeUrl: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="https://youtube.com/..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">TikTok URL</label>
+                  <input
+                    type="url"
+                    value={footerData.tiktokUrl}
+                    onChange={(e) => setFooterData({ ...footerData, tiktokUrl: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="https://tiktok.com/..."
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Copyright Text</label>
+                <input
+                  type="text"
+                  value={footerData.copyright}
+                  onChange={(e) => setFooterData({ ...footerData, copyright: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={handleSaveFooter}
+                className="flex-1 bg-black text-white px-6 py-3 font-bold uppercase hover:bg-gray-800 transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => setEditingFooter(false)}
+                className="flex-1 bg-gray-200 text-black px-6 py-3 font-bold uppercase hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
