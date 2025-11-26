@@ -93,6 +93,14 @@ export default function AdminDashboard() {
   const handleImageUpload = async (file: File, fieldName: string) => {
     if (!file) return;
 
+    // Check file size (3MB limit to account for base64 encoding ~33% increase = ~4MB)
+    // Vercel has a 4.5MB body size limit for serverless functions
+    const maxSize = 3 * 1024 * 1024; // 3MB in bytes (becomes ~4MB when base64 encoded)
+    if (file.size > maxSize) {
+      alert(`File is too large. Maximum size is 3MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      return;
+    }
+
     setUploading(true);
     setUploadField(fieldName);
 
@@ -111,14 +119,31 @@ export default function AdminDashboard() {
             body: JSON.stringify({ image: base64Image }),
           });
 
+          // Clone response to read it multiple times if needed
+          const responseClone = response.clone();
+          
           if (!response.ok) {
             let errorMessage = `Upload failed with status ${response.status}`;
-            try {
-              const errorData = await response.json();
-              errorMessage = errorData.error || errorData.message || errorMessage;
-            } catch (e) {
-              const text = await response.text();
-              errorMessage = text || errorMessage;
+            
+            // Handle specific status codes
+            if (response.status === 413) {
+              errorMessage = 'File is too large. Please use an image smaller than 3MB.';
+            } else {
+              try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorData.message || errorMessage;
+              } catch (e) {
+                // If JSON parsing fails, try text
+                try {
+                  const text = await responseClone.text();
+                  errorMessage = text || errorMessage;
+                } catch (textError) {
+                  // If both fail, use status-based message
+                  if (response.status === 413) {
+                    errorMessage = 'File is too large. Maximum size is 3MB.';
+                  }
+                }
+              }
             }
             console.error('Upload API error:', { status: response.status, message: errorMessage });
             throw new Error(errorMessage);
@@ -169,6 +194,14 @@ export default function AdminDashboard() {
       return;
     }
 
+    // Check file size (3MB limit to account for base64 encoding ~33% increase = ~4MB)
+    // Vercel has a 4.5MB body size limit for serverless functions
+    const maxSize = 3 * 1024 * 1024; // 3MB in bytes (becomes ~4MB when base64 encoded)
+    if (file.size > maxSize) {
+      alert(`File is too large. Maximum size is 3MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      return;
+    }
+
     setUploading(true);
     setUploadField('heroMedia');
 
@@ -186,14 +219,31 @@ export default function AdminDashboard() {
             body: JSON.stringify({ image: base64Media }),
           });
 
+          // Clone response to read it multiple times if needed
+          const responseClone = response.clone();
+          
           if (!response.ok) {
             let errorMessage = `Upload failed with status ${response.status}`;
-            try {
-              const errorData = await response.json();
-              errorMessage = errorData.error || errorData.message || errorMessage;
-            } catch (e) {
-              const text = await response.text();
-              errorMessage = text || errorMessage;
+            
+            // Handle specific status codes
+            if (response.status === 413) {
+              errorMessage = 'File is too large. Please use a file smaller than 3MB.';
+            } else {
+              try {
+                const errorData = await response.json();
+                errorMessage = errorData.error || errorData.message || errorMessage;
+              } catch (e) {
+                // If JSON parsing fails, try text
+                try {
+                  const text = await responseClone.text();
+                  errorMessage = text || errorMessage;
+                } catch (textError) {
+                  // If both fail, use status-based message
+                  if (response.status === 413) {
+                    errorMessage = 'File is too large. Maximum size is 3MB.';
+                  }
+                }
+              }
             }
             console.error('Upload API error:', { status: response.status, message: errorMessage });
             throw new Error(errorMessage);

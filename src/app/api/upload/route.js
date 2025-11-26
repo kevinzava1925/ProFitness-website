@@ -1,5 +1,9 @@
 import cloudinary from '@/utils/cloudinary';
 
+// Configure route to accept larger payloads (up to 50MB for base64 encoded files)
+export const maxDuration = 30; // 30 seconds max execution time
+export const runtime = 'nodejs';
+
 export async function POST(req) {
   try {
     // Check if Cloudinary is configured
