@@ -21,16 +21,35 @@ export async function POST(req) {
       return Response.json({ error: 'No image provided' }, { status: 400 });
     }
 
+    // Validate base64 string format
+    if (!image.startsWith('data:')) {
+      return Response.json({ 
+        error: 'Invalid image format', 
+        message: 'Image must be in base64 data URL format' 
+      }, { status: 400 });
+    }
+
     // Upload base64 image to Cloudinary
-    const uploaded = await cloudinary.uploader.upload(image, {
-      folder: "profitness",
-      resource_type: "auto",
-    });
+    let uploaded;
+    try {
+      uploaded = await cloudinary.uploader.upload(image, {
+        folder: "profitness",
+        resource_type: "auto",
+      });
+    } catch (cloudinaryError) {
+      console.error('Cloudinary upload error:', cloudinaryError);
+      return Response.json({ 
+        error: 'Cloudinary upload failed', 
+        message: cloudinaryError.message || 'Failed to upload to Cloudinary',
+        cloudinaryError: cloudinaryError.toString()
+      }, { status: 500 });
+    }
 
     if (!uploaded || !uploaded.secure_url) {
       return Response.json({ 
         error: 'Upload failed', 
-        message: 'No URL returned from Cloudinary' 
+        message: 'No URL returned from Cloudinary',
+        uploaded: uploaded ? 'Object exists but no secure_url' : 'No upload object'
       }, { status: 500 });
     }
 
@@ -40,6 +59,7 @@ export async function POST(req) {
     return Response.json({ 
       error: 'Upload failed', 
       message: error.message || 'Unknown error',
+      errorType: error.constructor.name,
       details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     }, { status: 500 });
   }

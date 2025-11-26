@@ -112,8 +112,16 @@ export default function AdminDashboard() {
           });
 
           if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
-            throw new Error(errorData.error || errorData.message || 'Upload failed');
+            let errorMessage = `Upload failed with status ${response.status}`;
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorData.message || errorMessage;
+            } catch (e) {
+              const text = await response.text();
+              errorMessage = text || errorMessage;
+            }
+            console.error('Upload API error:', { status: response.status, message: errorMessage });
+            throw new Error(errorMessage);
           }
 
           const data = await response.json();
@@ -179,8 +187,16 @@ export default function AdminDashboard() {
           });
 
           if (!response.ok) {
-            const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
-            throw new Error(errorData.error || errorData.message || 'Upload failed');
+            let errorMessage = `Upload failed with status ${response.status}`;
+            try {
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorData.message || errorMessage;
+            } catch (e) {
+              const text = await response.text();
+              errorMessage = text || errorMessage;
+            }
+            console.error('Upload API error:', { status: response.status, message: errorMessage });
+            throw new Error(errorMessage);
           }
 
           const data = await response.json();
