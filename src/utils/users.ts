@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
 export interface User {
@@ -20,8 +20,7 @@ const USERS_FILE = join(process.cwd(), 'data', 'users.json');
 function ensureDataDirectory() {
   const dataDir = join(process.cwd(), 'data');
   if (!existsSync(dataDir)) {
-    const fs = require('fs');
-    fs.mkdirSync(dataDir, { recursive: true });
+    mkdirSync(dataDir, { recursive: true });
   }
 }
 
