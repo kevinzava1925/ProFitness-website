@@ -119,9 +119,6 @@ export default function AdminDashboard() {
             body: JSON.stringify({ image: base64Image }),
           });
 
-          // Clone response to read it multiple times if needed
-          const responseClone = response.clone();
-          
           if (!response.ok) {
             let errorMessage = `Upload failed with status ${response.status}`;
             
@@ -129,19 +126,20 @@ export default function AdminDashboard() {
             if (response.status === 413) {
               errorMessage = 'File is too large. Please use an image smaller than 3MB.';
             } else {
+              // Read response as text first, then try to parse as JSON
               try {
-                const errorData = await response.json();
-                errorMessage = errorData.error || errorData.message || errorMessage;
-              } catch (e) {
-                // If JSON parsing fails, try text
+                const responseText = await response.text();
                 try {
-                  const text = await responseClone.text();
-                  errorMessage = text || errorMessage;
-                } catch (textError) {
-                  // If both fail, use status-based message
-                  if (response.status === 413) {
-                    errorMessage = 'File is too large. Maximum size is 3MB.';
-                  }
+                  const errorData = JSON.parse(responseText);
+                  errorMessage = errorData.error || errorData.message || errorMessage;
+                } catch (parseError) {
+                  // If not JSON, use the text as error message
+                  errorMessage = responseText || errorMessage;
+                }
+              } catch (textError) {
+                // If reading text fails, use status-based message
+                if (response.status === 413) {
+                  errorMessage = 'File is too large. Maximum size is 3MB.';
                 }
               }
             }
@@ -219,9 +217,6 @@ export default function AdminDashboard() {
             body: JSON.stringify({ image: base64Media }),
           });
 
-          // Clone response to read it multiple times if needed
-          const responseClone = response.clone();
-          
           if (!response.ok) {
             let errorMessage = `Upload failed with status ${response.status}`;
             
@@ -229,19 +224,20 @@ export default function AdminDashboard() {
             if (response.status === 413) {
               errorMessage = 'File is too large. Please use a file smaller than 3MB.';
             } else {
+              // Read response as text first, then try to parse as JSON
               try {
-                const errorData = await response.json();
-                errorMessage = errorData.error || errorData.message || errorMessage;
-              } catch (e) {
-                // If JSON parsing fails, try text
+                const responseText = await response.text();
                 try {
-                  const text = await responseClone.text();
-                  errorMessage = text || errorMessage;
-                } catch (textError) {
-                  // If both fail, use status-based message
-                  if (response.status === 413) {
-                    errorMessage = 'File is too large. Maximum size is 3MB.';
-                  }
+                  const errorData = JSON.parse(responseText);
+                  errorMessage = errorData.error || errorData.message || errorMessage;
+                } catch (parseError) {
+                  // If not JSON, use the text as error message
+                  errorMessage = responseText || errorMessage;
+                }
+              } catch (textError) {
+                // If reading text fails, use status-based message
+                if (response.status === 413) {
+                  errorMessage = 'File is too large. Maximum size is 3MB.';
                 }
               }
             }
