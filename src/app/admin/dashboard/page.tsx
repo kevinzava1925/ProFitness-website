@@ -112,10 +112,15 @@ export default function AdminDashboard() {
           });
 
           if (!response.ok) {
-            throw new Error('Upload failed');
+            const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+            throw new Error(errorData.error || errorData.message || 'Upload failed');
           }
 
           const data = await response.json();
+          
+          if (!data.url) {
+            throw new Error('No URL returned from upload');
+          }
           
           // Update the appropriate field based on what we're editing
           if (activeTab === 'trainers' && editingTrainer) {
@@ -127,7 +132,8 @@ export default function AdminDashboard() {
           }
         } catch (error) {
           console.error('Upload error:', error);
-          alert('Failed to upload image. Please try again.');
+          const errorMessage = error instanceof Error ? error.message : 'Failed to upload image. Please try again.';
+          alert(`Upload failed: ${errorMessage}`);
         } finally {
           setUploading(false);
           setUploadField(null);
@@ -173,10 +179,15 @@ export default function AdminDashboard() {
           });
 
           if (!response.ok) {
-            throw new Error('Upload failed');
+            const errorData = await response.json().catch(() => ({ error: 'Upload failed' }));
+            throw new Error(errorData.error || errorData.message || 'Upload failed');
           }
 
           const data = await response.json();
+          
+          if (!data.url) {
+            throw new Error('No URL returned from upload');
+          }
           
           const newHeroMedia: HeroMedia = {
             url: data.url,
@@ -188,7 +199,8 @@ export default function AdminDashboard() {
           alert('Homepage hero media updated successfully!');
         } catch (error) {
           console.error('Upload error:', error);
-          alert('Failed to upload media. Please try again.');
+          const errorMessage = error instanceof Error ? error.message : 'Failed to upload media. Please try again.';
+          alert(`Upload failed: ${errorMessage}`);
         } finally {
           setUploading(false);
           setUploadField(null);
