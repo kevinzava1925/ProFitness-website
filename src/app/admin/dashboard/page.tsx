@@ -104,46 +104,57 @@ export default function AdminDashboard() {
     setUploadField(fieldName);
 
     try {
-      // Create FormData for upload
+      // Get upload signature from server
+      const sigResponse = await fetch('/api/upload-signature?resource_type=image&folder=profitness');
+      if (!sigResponse.ok) {
+        throw new Error('Failed to get upload signature');
+      }
+      const sigData = await sigResponse.json();
+
+      // Create FormData for direct upload to Cloudinary
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('api_key', sigData.apiKey);
+      formData.append('timestamp', sigData.timestamp.toString());
+      formData.append('signature', sigData.signature);
+      formData.append('folder', sigData.folder);
+      formData.append('resource_type', sigData.resourceType);
 
-      // Upload via our API route (which handles Cloudinary upload)
-      const response = await fetch('/api/upload-direct', {
+      // Upload directly to Cloudinary (bypasses Vercel)
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${sigData.cloudName}/${sigData.resourceType}/upload`, {
         method: 'POST',
         body: formData,
       });
 
+      // Read response once
+      const responseText = await response.text();
+      
       if (!response.ok) {
         let errorMessage = `Upload failed with status ${response.status}`;
         try {
-          const responseText = await response.text();
-          try {
-            const errorData = JSON.parse(responseText);
-            errorMessage = errorData.error?.message || errorData.error || errorMessage;
-          } catch (parseError) {
-            errorMessage = responseText || errorMessage;
-          }
-        } catch (textError) {
-          // Use default error message
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error?.message || errorData.error || errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = responseText || errorMessage;
         }
         console.error('Cloudinary upload error:', { status: response.status, message: errorMessage });
         throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      // Parse the successful response
+      const data = JSON.parse(responseText);
       
-      if (!data.url) {
-        throw new Error('No URL returned from upload');
+      if (!data.secure_url) {
+        throw new Error('No URL returned from Cloudinary');
       }
       
       // Update the appropriate field based on what we're editing
       if (activeTab === 'trainers' && editingTrainer) {
-        setEditingTrainer({ ...editingTrainer, [fieldName]: data.url });
+        setEditingTrainer({ ...editingTrainer, [fieldName]: data.secure_url });
       } else if (activeTab === 'collaborations' && editingCollaboration) {
-        setEditingCollaboration({ ...editingCollaboration, [fieldName]: data.url });
+        setEditingCollaboration({ ...editingCollaboration, [fieldName]: data.secure_url });
       } else if (editingItem) {
-        setEditingItem({ ...editingItem, [fieldName]: data.url });
+        setEditingItem({ ...editingItem, [fieldName]: data.secure_url });
       }
     } catch (error) {
       console.error('Upload error:', error);
@@ -180,42 +191,54 @@ export default function AdminDashboard() {
     setUploadField('heroMedia');
 
     try {
-      // Create FormData for upload
+      // Get upload signature from server
+      const resourceType = isVideo ? 'video' : 'image';
+      const sigResponse = await fetch(`/api/upload-signature?resource_type=${resourceType}&folder=profitness`);
+      if (!sigResponse.ok) {
+        throw new Error('Failed to get upload signature');
+      }
+      const sigData = await sigResponse.json();
+
+      // Create FormData for direct upload to Cloudinary
       const formData = new FormData();
       formData.append('file', file);
+      formData.append('api_key', sigData.apiKey);
+      formData.append('timestamp', sigData.timestamp.toString());
+      formData.append('signature', sigData.signature);
+      formData.append('folder', sigData.folder);
+      formData.append('resource_type', sigData.resourceType);
 
-      // Upload via our API route (which handles Cloudinary upload)
-      const response = await fetch('/api/upload-direct', {
+      // Upload directly to Cloudinary (bypasses Vercel)
+      const response = await fetch(`https://api.cloudinary.com/v1_1/${sigData.cloudName}/${sigData.resourceType}/upload`, {
         method: 'POST',
         body: formData,
       });
 
+      // Read response once
+      const responseText = await response.text();
+      
       if (!response.ok) {
         let errorMessage = `Upload failed with status ${response.status}`;
         try {
-          const responseText = await response.text();
-          try {
-            const errorData = JSON.parse(responseText);
-            errorMessage = errorData.error?.message || errorData.error || errorMessage;
-          } catch (parseError) {
-            errorMessage = responseText || errorMessage;
-          }
-        } catch (textError) {
-          // Use default error message
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error?.message || errorData.error || errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = responseText || errorMessage;
         }
         console.error('Cloudinary upload error:', { status: response.status, message: errorMessage });
         throw new Error(errorMessage);
       }
 
-      const data = await response.json();
+      // Parse the successful response
+      const data = JSON.parse(responseText);
       
-      if (!data.url) {
-        throw new Error('No URL returned from upload');
+      if (!data.secure_url) {
+        throw new Error('No URL returned from Cloudinary');
       }
       
       const newHeroMedia: HeroMedia = {
-        url: data.url,
-        type: data.type || (isVideo ? 'video' : 'image')
+        url: data.secure_url,
+        type: data.resource_type || (isVideo ? 'video' : 'image')
       };
 
       setHeroMedia(newHeroMedia);
