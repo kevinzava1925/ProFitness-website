@@ -89,15 +89,14 @@ export default function AdminDashboard() {
   const [uploading, setUploading] = useState(false);
   const [uploadField, setUploadField] = useState<string | null>(null);
 
-  // Image upload function
+  // Image upload function - Direct upload to Cloudinary
   const handleImageUpload = async (file: File, fieldName: string) => {
     if (!file) return;
 
-    // Check file size (3MB limit to account for base64 encoding ~33% increase = ~4MB)
-    // Vercel has a 4.5MB body size limit for serverless functions
-    const maxSize = 3 * 1024 * 1024; // 3MB in bytes (becomes ~4MB when base64 encoded)
+    // Check file size (20MB limit for images)
+    const maxSize = 20 * 1024 * 1024; // 20MB in bytes
     if (file.size > maxSize) {
-      alert(`File is too large. Maximum size is 3MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      alert(`File is too large. Maximum size is 20MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
       return;
     }
 
@@ -105,81 +104,58 @@ export default function AdminDashboard() {
     setUploadField(fieldName);
 
     try {
-      // Convert file to base64
-      const reader = new FileReader();
-      reader.onloadend = async () => {
+      // Create FormData for upload
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Upload via our API route (which handles Cloudinary upload)
+      const response = await fetch('/api/upload-direct', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Upload failed with status ${response.status}`;
         try {
-          const base64Image = reader.result as string;
-          
-          const response = await fetch('/api/upload', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ image: base64Image }),
-          });
-
-          if (!response.ok) {
-            let errorMessage = `Upload failed with status ${response.status}`;
-            
-            // Handle specific status codes
-            if (response.status === 413) {
-              errorMessage = 'File is too large. Please use an image smaller than 3MB.';
-            } else {
-              // Read response as text first, then try to parse as JSON
-              try {
-                const responseText = await response.text();
-                try {
-                  const errorData = JSON.parse(responseText);
-                  errorMessage = errorData.error || errorData.message || errorMessage;
-                } catch (parseError) {
-                  // If not JSON, use the text as error message
-                  errorMessage = responseText || errorMessage;
-                }
-              } catch (textError) {
-                // If reading text fails, use status-based message
-                if (response.status === 413) {
-                  errorMessage = 'File is too large. Maximum size is 3MB.';
-                }
-              }
-            }
-            console.error('Upload API error:', { status: response.status, message: errorMessage });
-            throw new Error(errorMessage);
+          const responseText = await response.text();
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.error?.message || errorData.error || errorMessage;
+          } catch (parseError) {
+            errorMessage = responseText || errorMessage;
           }
-
-          const data = await response.json();
-          
-          if (!data.url) {
-            throw new Error('No URL returned from upload');
-          }
-          
-          // Update the appropriate field based on what we're editing
-          if (activeTab === 'trainers' && editingTrainer) {
-            setEditingTrainer({ ...editingTrainer, [fieldName]: data.url });
-          } else if (activeTab === 'collaborations' && editingCollaboration) {
-            setEditingCollaboration({ ...editingCollaboration, [fieldName]: data.url });
-          } else if (editingItem) {
-            setEditingItem({ ...editingItem, [fieldName]: data.url });
-          }
-        } catch (error) {
-          console.error('Upload error:', error);
-          const errorMessage = error instanceof Error ? error.message : 'Failed to upload image. Please try again.';
-          alert(`Upload failed: ${errorMessage}`);
-        } finally {
-          setUploading(false);
-          setUploadField(null);
+        } catch (textError) {
+          // Use default error message
         }
-      };
-      reader.readAsDataURL(file);
+        console.error('Cloudinary upload error:', { status: response.status, message: errorMessage });
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      
+      if (!data.url) {
+        throw new Error('No URL returned from upload');
+      }
+      
+      // Update the appropriate field based on what we're editing
+      if (activeTab === 'trainers' && editingTrainer) {
+        setEditingTrainer({ ...editingTrainer, [fieldName]: data.url });
+      } else if (activeTab === 'collaborations' && editingCollaboration) {
+        setEditingCollaboration({ ...editingCollaboration, [fieldName]: data.url });
+      } else if (editingItem) {
+        setEditingItem({ ...editingItem, [fieldName]: data.url });
+      }
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload image. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload image. Please try again.';
+      alert(`Upload failed: ${errorMessage}`);
+    } finally {
       setUploading(false);
       setUploadField(null);
     }
   };
 
-  // Handle hero media upload (image or video)
+  // Handle hero media upload (image or video) - Direct upload to Cloudinary
   const handleHeroMediaUpload = async (file: File) => {
     if (!file) return;
 
@@ -192,11 +168,11 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Check file size (3MB limit to account for base64 encoding ~33% increase = ~4MB)
-    // Vercel has a 4.5MB body size limit for serverless functions
-    const maxSize = 3 * 1024 * 1024; // 3MB in bytes (becomes ~4MB when base64 encoded)
+    // Check file size (20MB for images, 200MB for videos)
+    const maxSize = isVideo ? 200 * 1024 * 1024 : 20 * 1024 * 1024; // 200MB for videos, 20MB for images
     if (file.size > maxSize) {
-      alert(`File is too large. Maximum size is 3MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      const maxSizeMB = isVideo ? 200 : 20;
+      alert(`File is too large. Maximum size is ${maxSizeMB}MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
       return;
     }
 
@@ -204,74 +180,52 @@ export default function AdminDashboard() {
     setUploadField('heroMedia');
 
     try {
-      const reader = new FileReader();
-      reader.onloadend = async () => {
+      // Create FormData for upload
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Upload via our API route (which handles Cloudinary upload)
+      const response = await fetch('/api/upload-direct', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Upload failed with status ${response.status}`;
         try {
-          const base64Media = reader.result as string;
-          
-          const response = await fetch('/api/upload', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ image: base64Media }),
-          });
-
-          if (!response.ok) {
-            let errorMessage = `Upload failed with status ${response.status}`;
-            
-            // Handle specific status codes
-            if (response.status === 413) {
-              errorMessage = 'File is too large. Please use a file smaller than 3MB.';
-            } else {
-              // Read response as text first, then try to parse as JSON
-              try {
-                const responseText = await response.text();
-                try {
-                  const errorData = JSON.parse(responseText);
-                  errorMessage = errorData.error || errorData.message || errorMessage;
-                } catch (parseError) {
-                  // If not JSON, use the text as error message
-                  errorMessage = responseText || errorMessage;
-                }
-              } catch (textError) {
-                // If reading text fails, use status-based message
-                if (response.status === 413) {
-                  errorMessage = 'File is too large. Maximum size is 3MB.';
-                }
-              }
-            }
-            console.error('Upload API error:', { status: response.status, message: errorMessage });
-            throw new Error(errorMessage);
+          const responseText = await response.text();
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.error?.message || errorData.error || errorMessage;
+          } catch (parseError) {
+            errorMessage = responseText || errorMessage;
           }
-
-          const data = await response.json();
-          
-          if (!data.url) {
-            throw new Error('No URL returned from upload');
-          }
-          
-          const newHeroMedia: HeroMedia = {
-            url: data.url,
-            type: isVideo ? 'video' : 'image'
-          };
-
-          setHeroMedia(newHeroMedia);
-          localStorage.setItem("homepageHero", JSON.stringify(newHeroMedia));
-          alert('Homepage hero media updated successfully!');
-        } catch (error) {
-          console.error('Upload error:', error);
-          const errorMessage = error instanceof Error ? error.message : 'Failed to upload media. Please try again.';
-          alert(`Upload failed: ${errorMessage}`);
-        } finally {
-          setUploading(false);
-          setUploadField(null);
+        } catch (textError) {
+          // Use default error message
         }
+        console.error('Cloudinary upload error:', { status: response.status, message: errorMessage });
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      
+      if (!data.url) {
+        throw new Error('No URL returned from upload');
+      }
+      
+      const newHeroMedia: HeroMedia = {
+        url: data.url,
+        type: data.type || (isVideo ? 'video' : 'image')
       };
-      reader.readAsDataURL(file);
+
+      setHeroMedia(newHeroMedia);
+      localStorage.setItem("homepageHero", JSON.stringify(newHeroMedia));
+      alert('Homepage hero media updated successfully!');
     } catch (error) {
       console.error('Upload error:', error);
-      alert('Failed to upload media. Please try again.');
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload media. Please try again.';
+      alert(`Upload failed: ${errorMessage}`);
+    } finally {
       setUploading(false);
       setUploadField(null);
     }
