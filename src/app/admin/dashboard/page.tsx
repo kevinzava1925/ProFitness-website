@@ -118,10 +118,17 @@ export default function AdminDashboard() {
       formData.append('timestamp', sigData.timestamp.toString());
       formData.append('signature', sigData.signature);
       formData.append('folder', sigData.folder);
-      formData.append('resource_type', sigData.resourceType);
+      // Only include resource_type if it's not 'image' (to match signature)
+      if (sigData.resourceType !== 'image') {
+        formData.append('resource_type', sigData.resourceType);
+      }
 
       // Upload directly to Cloudinary (bypasses Vercel)
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${sigData.cloudName}/${sigData.resourceType}/upload`, {
+      const uploadUrl = sigData.resourceType === 'image' 
+        ? `https://api.cloudinary.com/v1_1/${sigData.cloudName}/image/upload`
+        : `https://api.cloudinary.com/v1_1/${sigData.cloudName}/video/upload`;
+      
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });
@@ -206,10 +213,17 @@ export default function AdminDashboard() {
       formData.append('timestamp', sigData.timestamp.toString());
       formData.append('signature', sigData.signature);
       formData.append('folder', sigData.folder);
-      formData.append('resource_type', sigData.resourceType);
+      // Only include resource_type if it's not 'image' (to match signature)
+      if (sigData.resourceType !== 'image') {
+        formData.append('resource_type', sigData.resourceType);
+      }
 
       // Upload directly to Cloudinary (bypasses Vercel)
-      const response = await fetch(`https://api.cloudinary.com/v1_1/${sigData.cloudName}/${sigData.resourceType}/upload`, {
+      const uploadUrl = sigData.resourceType === 'image' 
+        ? `https://api.cloudinary.com/v1_1/${sigData.cloudName}/image/upload`
+        : `https://api.cloudinary.com/v1_1/${sigData.cloudName}/video/upload`;
+      
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       });

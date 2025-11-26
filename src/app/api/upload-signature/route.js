@@ -18,23 +18,27 @@ export async function GET(req) {
     // Generate timestamp
     const timestamp = Math.round(new Date().getTime() / 1000);
 
-    // Create signature
+    // Create parameters object (only include parameters that will be sent in the upload)
     const params = {
       folder,
-      resource_type: resourceType,
       timestamp,
     };
 
-    // Sort parameters
-    const sortedParams = Object.keys(params)
-      .sort()
+    // Only include resource_type if it's not 'image' (default)
+    if (resourceType !== 'image') {
+      params.resource_type = resourceType;
+    }
+
+    // Sort parameters alphabetically by key
+    const sortedKeys = Object.keys(params).sort();
+    const sortedParams = sortedKeys
       .map(key => `${key}=${params[key]}`)
       .join('&');
 
-    // Create signature string
+    // Create signature string: sorted params + API secret
     const signatureString = sortedParams + process.env.CLOUDINARY_API_SECRET;
 
-    // Generate signature
+    // Generate SHA1 signature
     const signature = crypto
       .createHash('sha1')
       .update(signatureString)
