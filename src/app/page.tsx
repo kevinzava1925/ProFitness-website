@@ -46,25 +46,81 @@ export default function Home() {
   const [trainerCarouselIndex, setTrainerCarouselIndex] = useState(0);
   const [heroMedia, setHeroMedia] = useState<HeroMedia | null>(null);
 
-  // Load content from localStorage
+  // Load content from API (Supabase) - no localStorage fallback for syncing
   useEffect(() => {
-    // Load hero media
-    const loadedHeroMedia = localStorage.getItem("homepageHero");
-    if (loadedHeroMedia) {
-      setHeroMedia(JSON.parse(loadedHeroMedia));
-    } else {
-      // Default hero image
-      setHeroMedia({
-        url: "https://ext.same-assets.com/443545936/3789989498.webp",
-        type: "image"
-      });
-    }
+    const loadContent = async () => {
+      try {
+        // Always try to load from API first (Supabase) - add cache busting to ensure fresh data
+        const response = await fetch('/api/content?' + new Date().getTime());
+        if (response.ok) {
+          const allContent = await response.json();
+          
+          // Set each content type
+          if (allContent.classes && Array.isArray(allContent.classes) && allContent.classes.length > 0) {
+            setClasses(allContent.classes);
+          }
+          if (allContent.events && Array.isArray(allContent.events) && allContent.events.length > 0) {
+            setEvents(allContent.events);
+          }
+          if (allContent.shop && Array.isArray(allContent.shop) && allContent.shop.length > 0) {
+            setShopItems(allContent.shop);
+          }
+          if (allContent.partners && Array.isArray(allContent.partners) && allContent.partners.length > 0) {
+            setPartners(allContent.partners);
+          }
+          if (allContent.trainers && Array.isArray(allContent.trainers) && allContent.trainers.length > 0) {
+            setTrainers(allContent.trainers.slice(0, 4));
+          }
+          if (allContent.amenities && Array.isArray(allContent.amenities) && allContent.amenities.length > 0) {
+            setAmenities(allContent.amenities);
+          }
+          // Hero is a single object, not an array - ALWAYS use API data if available
+          if (allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url) {
+            setHeroMedia(allContent.hero);
+          } else {
+            // Only use default if API doesn't have hero data
+            setHeroMedia({
+              url: "https://ext.same-assets.com/443545936/3789989498.webp",
+              type: "image"
+            });
+          }
+          
+          // Use defaults for missing types
+          if (!allContent.classes || !Array.isArray(allContent.classes) || allContent.classes.length === 0) {
+            const defaultClasses = [
+              { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
+              { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
+              { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
+              { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
+              { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
+              { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
+            ];
+            setClasses(defaultClasses);
+          }
+          
+          return; // Successfully loaded from API
+        } else {
+          console.error('API response not OK:', response.status, response.statusText);
+          // If API fails, use defaults (not localStorage)
+          setHeroMedia({
+            url: "https://ext.same-assets.com/443545936/3789989498.webp",
+            type: "image"
+          });
+        }
+      } catch (error) {
+        console.error('Error loading from API:', error);
+        // If API fails, use defaults (not localStorage)
+        setHeroMedia({
+          url: "https://ext.same-assets.com/443545936/3789989498.webp",
+          type: "image"
+        });
+      }
 
-    const loadedClasses = localStorage.getItem("classes");
-    const loadedEvents = localStorage.getItem("events");
-    const loadedShop = localStorage.getItem("shopItems");
-    const loadedPartners = localStorage.getItem("partners");
-    const loadedTrainers = localStorage.getItem("trainers");
+      const loadedClasses = localStorage.getItem("classes");
+      const loadedEvents = localStorage.getItem("events");
+      const loadedShop = localStorage.getItem("shopItems");
+      const loadedPartners = localStorage.getItem("partners");
+      const loadedTrainers = localStorage.getItem("trainers");
 
     if (loadedClasses) setClasses(JSON.parse(loadedClasses));
     else {
@@ -167,8 +223,10 @@ export default function Home() {
         { id: '6', name: 'Sauna & Steam Room', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Relaxation facilities for post-workout recovery' }
       ];
       setAmenities(defaultAmenities);
-      localStorage.setItem("amenities", JSON.stringify(defaultAmenities));
     }
+    };
+
+    loadContent();
   }, []);
 
   return (

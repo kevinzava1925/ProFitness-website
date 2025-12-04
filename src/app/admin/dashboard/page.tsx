@@ -89,7 +89,7 @@ export default function AdminDashboard() {
   const [uploading, setUploading] = useState(false);
   const [uploadField, setUploadField] = useState<string | null>(null);
 
-  // Image upload function - Direct upload to Cloudinary
+  // Image upload function - Upload to Supabase Storage
   const handleImageUpload = async (file: File, fieldName: string) => {
     if (!file) return;
 
@@ -104,31 +104,12 @@ export default function AdminDashboard() {
     setUploadField(fieldName);
 
     try {
-      // Get upload signature from server
-      const sigResponse = await fetch('/api/upload-signature?resource_type=image&folder=profitness');
-      if (!sigResponse.ok) {
-        throw new Error('Failed to get upload signature');
-      }
-      const sigData = await sigResponse.json();
-
-      // Create FormData for direct upload to Cloudinary
+      // Create FormData for upload
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('api_key', sigData.apiKey);
-      formData.append('timestamp', sigData.timestamp.toString());
-      formData.append('signature', sigData.signature);
-      formData.append('folder', sigData.folder);
-      // Only include resource_type if it's not 'image' (to match signature)
-      if (sigData.resourceType !== 'image') {
-        formData.append('resource_type', sigData.resourceType);
-      }
 
-      // Upload directly to Cloudinary (bypasses Vercel)
-      const uploadUrl = sigData.resourceType === 'image' 
-        ? `https://api.cloudinary.com/v1_1/${sigData.cloudName}/image/upload`
-        : `https://api.cloudinary.com/v1_1/${sigData.cloudName}/video/upload`;
-      
-      const response = await fetch(uploadUrl, {
+      // Upload to Supabase Storage via API
+      const response = await fetch('/api/upload-storage', {
         method: 'POST',
         body: formData,
       });
@@ -140,28 +121,30 @@ export default function AdminDashboard() {
         let errorMessage = `Upload failed with status ${response.status}`;
         try {
           const errorData = JSON.parse(responseText);
-          errorMessage = errorData.error?.message || errorData.error || errorData.message || errorMessage;
+          errorMessage = errorData.error || errorData.message || errorMessage;
         } catch (parseError) {
           errorMessage = responseText || errorMessage;
         }
-        console.error('Cloudinary upload error:', { status: response.status, message: errorMessage });
+        console.error('Supabase storage upload error:', { status: response.status, message: errorMessage });
         throw new Error(errorMessage);
       }
 
       // Parse the successful response
       const data = JSON.parse(responseText);
       
-      if (!data.secure_url) {
-        throw new Error('No URL returned from Cloudinary');
+      if (!data.url && !data.secure_url) {
+        throw new Error('No URL returned from storage');
       }
+      
+      const imageUrl = data.url || data.secure_url;
       
       // Update the appropriate field based on what we're editing
       if (activeTab === 'trainers' && editingTrainer) {
-        setEditingTrainer({ ...editingTrainer, [fieldName]: data.secure_url });
+        setEditingTrainer({ ...editingTrainer, [fieldName]: imageUrl });
       } else if (activeTab === 'collaborations' && editingCollaboration) {
-        setEditingCollaboration({ ...editingCollaboration, [fieldName]: data.secure_url });
+        setEditingCollaboration({ ...editingCollaboration, [fieldName]: imageUrl });
       } else if (editingItem) {
-        setEditingItem({ ...editingItem, [fieldName]: data.secure_url });
+        setEditingItem({ ...editingItem, [fieldName]: imageUrl });
       }
     } catch (error) {
       console.error('Upload error:', error);
@@ -173,7 +156,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Handle hero media upload (image or video) - Direct upload to Cloudinary
+  // Handle hero media upload (image or video) - Upload to Supabase Storage
   const handleHeroMediaUpload = async (file: File) => {
     if (!file) return;
 
@@ -198,32 +181,12 @@ export default function AdminDashboard() {
     setUploadField('heroMedia');
 
     try {
-      // Get upload signature from server
-      const resourceType = isVideo ? 'video' : 'image';
-      const sigResponse = await fetch(`/api/upload-signature?resource_type=${resourceType}&folder=profitness`);
-      if (!sigResponse.ok) {
-        throw new Error('Failed to get upload signature');
-      }
-      const sigData = await sigResponse.json();
-
-      // Create FormData for direct upload to Cloudinary
+      // Create FormData for upload
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('api_key', sigData.apiKey);
-      formData.append('timestamp', sigData.timestamp.toString());
-      formData.append('signature', sigData.signature);
-      formData.append('folder', sigData.folder);
-      // Only include resource_type if it's not 'image' (to match signature)
-      if (sigData.resourceType !== 'image') {
-        formData.append('resource_type', sigData.resourceType);
-      }
 
-      // Upload directly to Cloudinary (bypasses Vercel)
-      const uploadUrl = sigData.resourceType === 'image' 
-        ? `https://api.cloudinary.com/v1_1/${sigData.cloudName}/image/upload`
-        : `https://api.cloudinary.com/v1_1/${sigData.cloudName}/video/upload`;
-      
-      const response = await fetch(uploadUrl, {
+      // Upload to Supabase Storage via API
+      const response = await fetch('/api/upload-storage', {
         method: 'POST',
         body: formData,
       });
@@ -235,28 +198,29 @@ export default function AdminDashboard() {
         let errorMessage = `Upload failed with status ${response.status}`;
         try {
           const errorData = JSON.parse(responseText);
-          errorMessage = errorData.error?.message || errorData.error || errorData.message || errorMessage;
+          errorMessage = errorData.error || errorData.message || errorMessage;
         } catch (parseError) {
           errorMessage = responseText || errorMessage;
         }
-        console.error('Cloudinary upload error:', { status: response.status, message: errorMessage });
+        console.error('Supabase storage upload error:', { status: response.status, message: errorMessage });
         throw new Error(errorMessage);
       }
 
       // Parse the successful response
       const data = JSON.parse(responseText);
       
-      if (!data.secure_url) {
-        throw new Error('No URL returned from Cloudinary');
+      if (!data.url && !data.secure_url) {
+        throw new Error('No URL returned from storage');
       }
       
+      const mediaUrl = data.url || data.secure_url;
       const newHeroMedia: HeroMedia = {
-        url: data.secure_url,
-        type: data.resource_type || (isVideo ? 'video' : 'image')
+        url: mediaUrl,
+        type: data.type || (isVideo ? 'video' : 'image')
       };
 
       setHeroMedia(newHeroMedia);
-      localStorage.setItem("homepageHero", JSON.stringify(newHeroMedia));
+      await saveContentToAPI('hero', newHeroMedia);
       alert('Homepage hero media updated successfully!');
     } catch (error) {
       console.error('Upload error:', error);
@@ -268,6 +232,38 @@ export default function AdminDashboard() {
     }
   };
 
+  // Helper function to save content to Supabase API - NO localStorage fallback for syncing
+  const saveContentToAPI = async (type: string, data: ContentItem[] | PricingPlan[] | FooterData | HeroMedia | CollaborationItem[] | Trainer[]) => {
+    try {
+      const response = await fetch('/api/content', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ type, data }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errorMessage = 'Failed to save content';
+        try {
+          const errorData = JSON.parse(errorText);
+          errorMessage = errorData.error || errorMessage;
+        } catch {
+          errorMessage = errorText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error saving to API:', error);
+      // DO NOT fallback to localStorage - this breaks syncing across devices
+      // Always throw error so user knows save failed
+      throw error;
+    }
+  };
+
   // Check authentication
   useEffect(() => {
     const isAuth = localStorage.getItem("adminAuth");
@@ -276,189 +272,202 @@ export default function AdminDashboard() {
     }
   }, [router]);
 
-  // Load data from localStorage
+  // Load data from API (with localStorage fallback)
   useEffect(() => {
-    const loadedClasses = localStorage.getItem("classes");
-    const loadedEvents = localStorage.getItem("events");
-    const loadedShop = localStorage.getItem("shopItems");
-    const loadedPartners = localStorage.getItem("partners");
-
-    if (loadedClasses) setClasses(JSON.parse(loadedClasses));
-    else {
-      // Default classes
-      const defaultClasses = [
-        { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
-        { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
-        { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
-        { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
-        { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
-        { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
-      ];
-      setClasses(defaultClasses);
-      localStorage.setItem("classes", JSON.stringify(defaultClasses));
-    }
-
-    if (loadedEvents) setEvents(JSON.parse(loadedEvents));
-    else {
-      const defaultEvents = [
-        { id: '1', name: 'Intro to Martial Arts for FLINTA*', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'SAMSTAG & SONNTAG', description: 'Das Wochenendseminar von und für FLINTA*s zur Einführung in den Kampfsport.' },
-        { id: '2', name: 'Fightchallenge Round Six', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: '6.12.25', description: 'Wir präsentieren "FightChallenge - Round Six' },
-        { id: '3', name: 'Defensive Boxing Wrestling for MMA', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: '13.12.25', description: 'Join and learn all about boxing and wrestling for MMA.' }
-      ];
-      setEvents(defaultEvents);
-      localStorage.setItem("events", JSON.stringify(defaultEvents));
-    }
-
-    if (loadedShop) setShopItems(JSON.parse(loadedShop));
-    else {
-      const defaultShop = [
-        { id: '1', name: 'Cap', image: 'https://ext.same-assets.com/443545936/1859491465.webp' },
-        { id: '2', name: 'Duffle Bag', image: 'https://ext.same-assets.com/443545936/3860077197.webp' },
-        { id: '3', name: 'T-Shirt', image: 'https://ext.same-assets.com/443545936/2710426474.webp' },
-        { id: '4', name: 'Hoodie', image: 'https://ext.same-assets.com/443545936/480816838.webp' }
-      ];
-      setShopItems(defaultShop);
-      localStorage.setItem("shopItems", JSON.stringify(defaultShop));
-    }
-
-    if (loadedPartners) setPartners(JSON.parse(loadedPartners));
-    else {
-      const defaultPartners = [
-        { id: '1', name: 'GEMMAF', image: 'https://ext.same-assets.com/443545936/2709833716.webp' },
-        { id: '2', name: 'AMMAG', image: 'https://ext.same-assets.com/443545936/59465891.webp' }
-      ];
-      setPartners(defaultPartners);
-      localStorage.setItem("partners", JSON.stringify(defaultPartners));
-    }
-
-    // Load pricing plans
-    const loadedPricing = localStorage.getItem("pricingPlans");
-    if (loadedPricing) {
-      setPricingPlans(JSON.parse(loadedPricing));
-    } else {
-      const defaultPricing: PricingPlan[] = [
-        {
-          id: '1',
-          name: 'Basic',
-          price: '$49',
-          period: 'per month',
-          features: ['Access to all group classes', 'Gym equipment access', 'Locker room facilities', 'Free parking']
-        },
-        {
-          id: '2',
-          name: 'Premium',
-          price: '$79',
-          period: 'per month',
-          features: ['Everything in Basic', 'Priority class booking', '1 personal training session/month', 'Nutrition consultation', 'Guest passes (2/month)'],
-          popular: true
-        },
-        {
-          id: '3',
-          name: 'Elite',
-          price: '$129',
-          period: 'per month',
-          features: ['Everything in Premium', 'Unlimited personal training', '24/7 gym access', 'Towel service', 'Unlimited guest passes', 'Complimentary supplements']
+    const loadContent = async () => {
+      try {
+        // Try to load from API
+        const response = await fetch('/api/content');
+        if (response.ok) {
+          const allContent = await response.json();
+          
+          // Set each content type
+          if (allContent.classes && Array.isArray(allContent.classes)) setClasses(allContent.classes);
+          if (allContent.events && Array.isArray(allContent.events)) setEvents(allContent.events);
+          if (allContent.shop && Array.isArray(allContent.shop)) setShopItems(allContent.shop);
+          if (allContent.partners && Array.isArray(allContent.partners)) setPartners(allContent.partners);
+          if (allContent.pricing && Array.isArray(allContent.pricing)) setPricingPlans(allContent.pricing);
+          // Footer and hero are single objects, not arrays
+          if (allContent.footer && typeof allContent.footer === 'object') setFooterData(allContent.footer);
+          if (allContent.collaborations && Array.isArray(allContent.collaborations)) setCollaborations(allContent.collaborations);
+          if (allContent.trainers && Array.isArray(allContent.trainers)) setTrainers(allContent.trainers);
+          if (allContent.amenities && Array.isArray(allContent.amenities)) setAmenities(allContent.amenities);
+          if (allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url) setHeroMedia(allContent.hero);
+          
+          return; // Successfully loaded from API
         }
-      ];
-      setPricingPlans(defaultPricing);
-      localStorage.setItem("pricingPlans", JSON.stringify(defaultPricing));
-    }
+      } catch (error) {
+        console.error('Error loading from API, falling back to localStorage:', error);
+      }
 
-    // Load footer data
-    const loadedFooter = localStorage.getItem("footerData");
-    if (loadedFooter) {
-      setFooterData(JSON.parse(loadedFooter));
-    } else {
-      const defaultFooter: FooterData = {
-        gymName: 'ProFitness Gym',
-        address: '123 Fitness Street',
-        city: 'City, State 12345',
-        phone: '(123) 456-7890',
-        email: 'info@profitness.com',
-        hoursWeekday: '06 AM - 10 PM',
-        hoursSaturday: '08 AM - 8 PM',
-        hoursSunday: '09 AM - 6 PM',
-        instagramUrl: '#',
-        facebookUrl: '#',
-        youtubeUrl: '#',
-        tiktokUrl: '#',
-        copyright: 'Copyright ProFitness Gym 2025'
-      };
-      setFooterData(defaultFooter);
-      localStorage.setItem("footerData", JSON.stringify(defaultFooter));
-    }
+      // Fallback to localStorage
+      const loadedClasses = localStorage.getItem("classes");
+      const loadedEvents = localStorage.getItem("events");
+      const loadedShop = localStorage.getItem("shopItems");
+      const loadedPartners = localStorage.getItem("partners");
 
-    // Load collaborations
-    const loadedCollaborations = localStorage.getItem("collaborations");
-    if (loadedCollaborations) {
-      setCollaborations(JSON.parse(loadedCollaborations));
-    } else {
-      const defaultCollaborations: CollaborationItem[] = [
-        { id: '1', name: 'Fitness Brand A', image: 'https://ext.same-assets.com/443545936/1859491465.webp', description: 'Premium fitness equipment and gear' },
-        { id: '2', name: 'Nutrition Company B', image: 'https://ext.same-assets.com/443545936/3860077197.webp', description: 'Health supplements and nutrition products' }
-      ];
-      setCollaborations(defaultCollaborations);
-      localStorage.setItem("collaborations", JSON.stringify(defaultCollaborations));
-    }
+      if (loadedClasses) setClasses(JSON.parse(loadedClasses));
+      else {
+        const defaultClasses = [
+          { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
+          { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
+          { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
+          { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
+          { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
+          { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
+        ];
+        setClasses(defaultClasses);
+      }
 
-    // Load trainers
-    const loadedTrainers = localStorage.getItem("trainers");
-    if (loadedTrainers) {
-      setTrainers(JSON.parse(loadedTrainers));
-    } else {
-      const defaultTrainers: Trainer[] = [
-        { 
-          id: '1', 
-          name: 'John Smith', 
-          image: 'https://ext.same-assets.com/443545936/1729744263.webp', 
-          specialty: 'Strength Training',
-          bio: 'With over 10 years of experience in strength training and bodybuilding, John helps clients build muscle and achieve their fitness goals.',
+      if (loadedEvents) setEvents(JSON.parse(loadedEvents));
+      else {
+        const defaultEvents = [
+          { id: '1', name: 'Intro to Martial Arts for FLINTA*', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'SAMSTAG & SONNTAG', description: 'Das Wochenendseminar von und für FLINTA*s zur Einführung in den Kampfsport.' },
+          { id: '2', name: 'Fightchallenge Round Six', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: '6.12.25', description: 'Wir präsentieren "FightChallenge - Round Six' },
+          { id: '3', name: 'Defensive Boxing Wrestling for MMA', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: '13.12.25', description: 'Join and learn all about boxing and wrestling for MMA.' }
+        ];
+        setEvents(defaultEvents);
+      }
+
+      if (loadedShop) setShopItems(JSON.parse(loadedShop));
+      else {
+        const defaultShop = [
+          { id: '1', name: 'Cap', image: 'https://ext.same-assets.com/443545936/1859491465.webp' },
+          { id: '2', name: 'Duffle Bag', image: 'https://ext.same-assets.com/443545936/3860077197.webp' },
+          { id: '3', name: 'T-Shirt', image: 'https://ext.same-assets.com/443545936/2710426474.webp' },
+          { id: '4', name: 'Hoodie', image: 'https://ext.same-assets.com/443545936/480816838.webp' }
+        ];
+        setShopItems(defaultShop);
+      }
+
+      if (loadedPartners) setPartners(JSON.parse(loadedPartners));
+      else {
+        const defaultPartners = [
+          { id: '1', name: 'GEMMAF', image: 'https://ext.same-assets.com/443545936/2709833716.webp' },
+          { id: '2', name: 'AMMAG', image: 'https://ext.same-assets.com/443545936/59465891.webp' }
+        ];
+        setPartners(defaultPartners);
+      }
+
+      const loadedPricing = localStorage.getItem("pricingPlans");
+      if (loadedPricing) {
+        setPricingPlans(JSON.parse(loadedPricing));
+      } else {
+        const defaultPricing: PricingPlan[] = [
+          {
+            id: '1',
+            name: 'Basic',
+            price: '$49',
+            period: 'per month',
+            features: ['Access to all group classes', 'Gym equipment access', 'Locker room facilities', 'Free parking']
+          },
+          {
+            id: '2',
+            name: 'Premium',
+            price: '$79',
+            period: 'per month',
+            features: ['Everything in Basic', 'Priority class booking', '1 personal training session/month', 'Nutrition consultation', 'Guest passes (2/month)'],
+            popular: true
+          },
+          {
+            id: '3',
+            name: 'Elite',
+            price: '$129',
+            period: 'per month',
+            features: ['Everything in Premium', 'Unlimited personal training', '24/7 gym access', 'Towel service', 'Unlimited guest passes', 'Complimentary supplements']
+          }
+        ];
+        setPricingPlans(defaultPricing);
+      }
+
+      const loadedFooter = localStorage.getItem("footerData");
+      if (loadedFooter) {
+        setFooterData(JSON.parse(loadedFooter));
+      } else {
+        const defaultFooter: FooterData = {
+          gymName: 'ProFitness Gym',
+          address: '123 Fitness Street',
+          city: 'City, State 12345',
+          phone: '(123) 456-7890',
+          email: 'info@profitness.com',
+          hoursWeekday: '06 AM - 10 PM',
+          hoursSaturday: '08 AM - 8 PM',
+          hoursSunday: '09 AM - 6 PM',
           instagramUrl: '#',
-          facebookUrl: '#'
-        },
-        { 
-          id: '2', 
-          name: 'Sarah Johnson', 
-          image: 'https://ext.same-assets.com/443545936/691732246.webp', 
-          specialty: 'Yoga & Flexibility',
-          bio: 'Certified yoga instructor specializing in flexibility, mobility, and mindfulness practices for overall wellness.',
-          instagramUrl: '#',
-          linkedinUrl: '#'
-        }
-      ];
-      setTrainers(defaultTrainers);
-      localStorage.setItem("trainers", JSON.stringify(defaultTrainers));
-    }
+          facebookUrl: '#',
+          youtubeUrl: '#',
+          tiktokUrl: '#',
+          copyright: 'Copyright ProFitness Gym 2025'
+        };
+        setFooterData(defaultFooter);
+      }
 
-    // Load amenities
-    const loadedAmenities = localStorage.getItem("amenities");
-    if (loadedAmenities) {
-      setAmenities(JSON.parse(loadedAmenities));
-    } else {
-      const defaultAmenities: ContentItem[] = [
-        { id: '1', name: 'Locker Rooms', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Spacious locker rooms with showers and changing facilities' },
-        { id: '2', name: 'Cardio Equipment', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
-        { id: '3', name: 'Free Weights', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
-        { id: '4', name: 'Group Classes', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Multiple group fitness studios for various classes' },
-        { id: '5', name: 'Personal Training', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Private training areas with certified personal trainers' },
-        { id: '6', name: 'Sauna & Steam Room', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Relaxation facilities for post-workout recovery' }
-      ];
-      setAmenities(defaultAmenities);
-      localStorage.setItem("amenities", JSON.stringify(defaultAmenities));
-    }
+      const loadedCollaborations = localStorage.getItem("collaborations");
+      if (loadedCollaborations) {
+        setCollaborations(JSON.parse(loadedCollaborations));
+      } else {
+        const defaultCollaborations: CollaborationItem[] = [
+          { id: '1', name: 'Fitness Brand A', image: 'https://ext.same-assets.com/443545936/1859491465.webp', description: 'Premium fitness equipment and gear' },
+          { id: '2', name: 'Nutrition Company B', image: 'https://ext.same-assets.com/443545936/3860077197.webp', description: 'Health supplements and nutrition products' }
+        ];
+        setCollaborations(defaultCollaborations);
+      }
 
-    // Load homepage hero media
-    const loadedHeroMedia = localStorage.getItem("homepageHero");
-    if (loadedHeroMedia) {
-      setHeroMedia(JSON.parse(loadedHeroMedia));
-    } else {
-      const defaultHero: HeroMedia = {
-        url: "https://ext.same-assets.com/443545936/3789989498.webp",
-        type: "image"
-      };
-      setHeroMedia(defaultHero);
-      localStorage.setItem("homepageHero", JSON.stringify(defaultHero));
-    }
+      const loadedTrainers = localStorage.getItem("trainers");
+      if (loadedTrainers) {
+        setTrainers(JSON.parse(loadedTrainers));
+      } else {
+        const defaultTrainers: Trainer[] = [
+          { 
+            id: '1', 
+            name: 'John Smith', 
+            image: 'https://ext.same-assets.com/443545936/1729744263.webp', 
+            specialty: 'Strength Training',
+            bio: 'With over 10 years of experience in strength training and bodybuilding, John helps clients build muscle and achieve their fitness goals.',
+            instagramUrl: '#',
+            facebookUrl: '#'
+          },
+          { 
+            id: '2', 
+            name: 'Sarah Johnson', 
+            image: 'https://ext.same-assets.com/443545936/691732246.webp', 
+            specialty: 'Yoga & Flexibility',
+            bio: 'Certified yoga instructor specializing in flexibility, mobility, and mindfulness practices for overall wellness.',
+            instagramUrl: '#',
+            linkedinUrl: '#'
+          }
+        ];
+        setTrainers(defaultTrainers);
+      }
+
+      const loadedAmenities = localStorage.getItem("amenities");
+      if (loadedAmenities) {
+        setAmenities(JSON.parse(loadedAmenities));
+      } else {
+        const defaultAmenities: ContentItem[] = [
+          { id: '1', name: 'Locker Rooms', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Spacious locker rooms with showers and changing facilities' },
+          { id: '2', name: 'Cardio Equipment', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
+          { id: '3', name: 'Free Weights', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
+          { id: '4', name: 'Group Classes', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Multiple group fitness studios for various classes' },
+          { id: '5', name: 'Personal Training', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Private training areas with certified personal trainers' },
+          { id: '6', name: 'Sauna & Steam Room', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Relaxation facilities for post-workout recovery' }
+        ];
+        setAmenities(defaultAmenities);
+      }
+
+      const loadedHeroMedia = localStorage.getItem("homepageHero");
+      if (loadedHeroMedia) {
+        setHeroMedia(JSON.parse(loadedHeroMedia));
+      } else {
+        const defaultHero: HeroMedia = {
+          url: "https://ext.same-assets.com/443545936/3789989498.webp",
+          type: "image"
+        };
+        setHeroMedia(defaultHero);
+      }
+    };
+
+    loadContent();
   }, []);
 
   const handleLogout = () => {
@@ -477,37 +486,42 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
 
     const updateState = (items: ContentItem[]) => items.filter(item => item.id !== id);
 
-    switch (activeTab) {
-      case 'classes':
-        const newClasses = updateState(classes);
-        setClasses(newClasses);
-        localStorage.setItem("classes", JSON.stringify(newClasses));
-        break;
-      case 'events':
-        const newEvents = updateState(events);
-        setEvents(newEvents);
-        localStorage.setItem("events", JSON.stringify(newEvents));
-        break;
-      case 'shop':
-        const newShop = updateState(shopItems);
-        setShopItems(newShop);
-        localStorage.setItem("shopItems", JSON.stringify(newShop));
-        break;
-      case 'partners':
-        const newPartners = updateState(partners);
-        setPartners(newPartners);
-        localStorage.setItem("partners", JSON.stringify(newPartners));
-        break;
-      case 'amenities':
-        const newAmenities = updateState(amenities);
-        setAmenities(newAmenities);
-        localStorage.setItem("amenities", JSON.stringify(newAmenities));
-        break;
+    try {
+      switch (activeTab) {
+        case 'classes':
+          const newClasses = updateState(classes);
+          setClasses(newClasses);
+          await saveContentToAPI('classes', newClasses);
+          break;
+        case 'events':
+          const newEvents = updateState(events);
+          setEvents(newEvents);
+          await saveContentToAPI('events', newEvents);
+          break;
+        case 'shop':
+          const newShop = updateState(shopItems);
+          setShopItems(newShop);
+          await saveContentToAPI('shop', newShop);
+          break;
+        case 'partners':
+          const newPartners = updateState(partners);
+          setPartners(newPartners);
+          await saveContentToAPI('partners', newPartners);
+          break;
+        case 'amenities':
+          const newAmenities = updateState(amenities);
+          setAmenities(newAmenities);
+          await saveContentToAPI('amenities', newAmenities);
+          break;
+      }
+    } catch (error) {
+      console.error('Error deleting item:', error);
+      alert('Failed to delete item. Please try again.');
     }
   };
 
@@ -531,7 +545,7 @@ export default function AdminDashboard() {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!editingItem) return;
 
     const updateItems = (items: ContentItem[]) => {
@@ -543,43 +557,53 @@ export default function AdminDashboard() {
       }
     };
 
-    switch (activeTab) {
-      case 'classes':
-        const newClasses = updateItems(classes);
-        setClasses(newClasses);
-        localStorage.setItem("classes", JSON.stringify(newClasses));
-        break;
-      case 'events':
-        const newEvents = updateItems(events);
-        setEvents(newEvents);
-        localStorage.setItem("events", JSON.stringify(newEvents));
-        break;
-      case 'shop':
-        const newShop = updateItems(shopItems);
-        setShopItems(newShop);
-        localStorage.setItem("shopItems", JSON.stringify(newShop));
-        break;
-      case 'partners':
-        const newPartners = updateItems(partners);
-        setPartners(newPartners);
-        localStorage.setItem("partners", JSON.stringify(newPartners));
-        break;
-      case 'amenities':
-        const newAmenities = updateItems(amenities);
-        setAmenities(newAmenities);
-        localStorage.setItem("amenities", JSON.stringify(newAmenities));
-        break;
-    }
+    try {
+      switch (activeTab) {
+        case 'classes':
+          const newClasses = updateItems(classes);
+          setClasses(newClasses);
+          await saveContentToAPI('classes', newClasses);
+          break;
+        case 'events':
+          const newEvents = updateItems(events);
+          setEvents(newEvents);
+          await saveContentToAPI('events', newEvents);
+          break;
+        case 'shop':
+          const newShop = updateItems(shopItems);
+          setShopItems(newShop);
+          await saveContentToAPI('shop', newShop);
+          break;
+        case 'partners':
+          const newPartners = updateItems(partners);
+          setPartners(newPartners);
+          await saveContentToAPI('partners', newPartners);
+          break;
+        case 'amenities':
+          const newAmenities = updateItems(amenities);
+          setAmenities(newAmenities);
+          await saveContentToAPI('amenities', newAmenities);
+          break;
+      }
 
-    setIsEditing(false);
-    setEditingItem(null);
+      setIsEditing(false);
+      setEditingItem(null);
+    } catch (error) {
+      console.error('Error saving item:', error);
+      alert('Failed to save item. Please try again.');
+    }
   };
 
-  const handleDeletePlan = (id: string) => {
+  const handleDeletePlan = async (id: string) => {
     if (!confirm('Are you sure you want to delete this pricing plan?')) return;
-    const newPlans = pricingPlans.filter(plan => plan.id !== id);
-    setPricingPlans(newPlans);
-    localStorage.setItem("pricingPlans", JSON.stringify(newPlans));
+    try {
+      const newPlans = pricingPlans.filter(plan => plan.id !== id);
+      setPricingPlans(newPlans);
+      await saveContentToAPI('pricing', newPlans);
+    } catch (error) {
+      console.error('Error deleting plan:', error);
+      alert('Failed to delete plan. Please try again.');
+    }
   };
 
   const handleAddPlan = () => {
@@ -599,28 +623,38 @@ export default function AdminDashboard() {
     setIsEditing(true);
   };
 
-  const handleSavePlan = () => {
+  const handleSavePlan = async () => {
     if (!editingPlan) return;
 
-    const exists = pricingPlans.find(plan => plan.id === editingPlan.id);
-    let newPlans: PricingPlan[];
-    
-    if (exists) {
-      newPlans = pricingPlans.map(plan => plan.id === editingPlan.id ? editingPlan : plan);
-    } else {
-      newPlans = [...pricingPlans, editingPlan];
-    }
+    try {
+      const exists = pricingPlans.find(plan => plan.id === editingPlan.id);
+      let newPlans: PricingPlan[];
+      
+      if (exists) {
+        newPlans = pricingPlans.map(plan => plan.id === editingPlan.id ? editingPlan : plan);
+      } else {
+        newPlans = [...pricingPlans, editingPlan];
+      }
 
-    setPricingPlans(newPlans);
-    localStorage.setItem("pricingPlans", JSON.stringify(newPlans));
-    setIsEditing(false);
-    setEditingPlan(null);
+      setPricingPlans(newPlans);
+      await saveContentToAPI('pricing', newPlans);
+      setIsEditing(false);
+      setEditingPlan(null);
+    } catch (error) {
+      console.error('Error saving plan:', error);
+      alert('Failed to save plan. Please try again.');
+    }
   };
 
-  const handleSaveFooter = () => {
+  const handleSaveFooter = async () => {
     if (!footerData) return;
-    localStorage.setItem("footerData", JSON.stringify(footerData));
-    setEditingFooter(false);
+    try {
+      await saveContentToAPI('footer', footerData);
+      setEditingFooter(false);
+    } catch (error) {
+      console.error('Error saving footer:', error);
+      alert('Failed to save footer. Please try again.');
+    }
   };
 
   const addFeatureToPlan = () => {
@@ -666,28 +700,38 @@ export default function AdminDashboard() {
     setIsEditing(true);
   };
 
-  const handleSaveCollaboration = () => {
+  const handleSaveCollaboration = async () => {
     if (!editingCollaboration) return;
-    const exists = collaborations.find(c => c.id === editingCollaboration.id);
-    let newCollaborations: CollaborationItem[];
-    
-    if (exists) {
-      newCollaborations = collaborations.map(c => c.id === editingCollaboration.id ? editingCollaboration : c);
-    } else {
-      newCollaborations = [...collaborations, editingCollaboration];
-    }
+    try {
+      const exists = collaborations.find(c => c.id === editingCollaboration.id);
+      let newCollaborations: CollaborationItem[];
+      
+      if (exists) {
+        newCollaborations = collaborations.map(c => c.id === editingCollaboration.id ? editingCollaboration : c);
+      } else {
+        newCollaborations = [...collaborations, editingCollaboration];
+      }
 
-    setCollaborations(newCollaborations);
-    localStorage.setItem("collaborations", JSON.stringify(newCollaborations));
-    setIsEditing(false);
-    setEditingCollaboration(null);
+      setCollaborations(newCollaborations);
+      await saveContentToAPI('collaborations', newCollaborations);
+      setIsEditing(false);
+      setEditingCollaboration(null);
+    } catch (error) {
+      console.error('Error saving collaboration:', error);
+      alert('Failed to save collaboration. Please try again.');
+    }
   };
 
-  const handleDeleteCollaboration = (id: string) => {
+  const handleDeleteCollaboration = async (id: string) => {
     if (!confirm('Are you sure you want to delete this collaboration?')) return;
-    const newCollaborations = collaborations.filter(c => c.id !== id);
-    setCollaborations(newCollaborations);
-    localStorage.setItem("collaborations", JSON.stringify(newCollaborations));
+    try {
+      const newCollaborations = collaborations.filter(c => c.id !== id);
+      setCollaborations(newCollaborations);
+      await saveContentToAPI('collaborations', newCollaborations);
+    } catch (error) {
+      console.error('Error deleting collaboration:', error);
+      alert('Failed to delete collaboration. Please try again.');
+    }
   };
 
   // Trainer handlers
@@ -711,28 +755,38 @@ export default function AdminDashboard() {
     setIsEditing(true);
   };
 
-  const handleSaveTrainer = () => {
+  const handleSaveTrainer = async () => {
     if (!editingTrainer) return;
-    const exists = trainers.find(t => t.id === editingTrainer.id);
-    let newTrainers: Trainer[];
-    
-    if (exists) {
-      newTrainers = trainers.map(t => t.id === editingTrainer.id ? editingTrainer : t);
-    } else {
-      newTrainers = [...trainers, editingTrainer];
-    }
+    try {
+      const exists = trainers.find(t => t.id === editingTrainer.id);
+      let newTrainers: Trainer[];
+      
+      if (exists) {
+        newTrainers = trainers.map(t => t.id === editingTrainer.id ? editingTrainer : t);
+      } else {
+        newTrainers = [...trainers, editingTrainer];
+      }
 
-    setTrainers(newTrainers);
-    localStorage.setItem("trainers", JSON.stringify(newTrainers));
-    setIsEditing(false);
-    setEditingTrainer(null);
+      setTrainers(newTrainers);
+      await saveContentToAPI('trainers', newTrainers);
+      setIsEditing(false);
+      setEditingTrainer(null);
+    } catch (error) {
+      console.error('Error saving trainer:', error);
+      alert('Failed to save trainer. Please try again.');
+    }
   };
 
-  const handleDeleteTrainer = (id: string) => {
+  const handleDeleteTrainer = async (id: string) => {
     if (!confirm('Are you sure you want to delete this trainer?')) return;
-    const newTrainers = trainers.filter(t => t.id !== id);
-    setTrainers(newTrainers);
-    localStorage.setItem("trainers", JSON.stringify(newTrainers));
+    try {
+      const newTrainers = trainers.filter(t => t.id !== id);
+      setTrainers(newTrainers);
+      await saveContentToAPI('trainers', newTrainers);
+    } catch (error) {
+      console.error('Error deleting trainer:', error);
+      alert('Failed to delete trainer. Please try again.');
+    }
   };
 
   return (
