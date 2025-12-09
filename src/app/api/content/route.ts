@@ -52,20 +52,20 @@ export async function GET(request: NextRequest) {
       }
 
       // Group by type
-      const grouped: Record<string, unknown> = {};
+      const grouped: Record<string, unknown[] | Record<string, unknown>> = {};
       data.forEach(item => {
         // For single objects (hero, footer), store as object, not array
         if (item.type === 'hero' || item.type === 'footer') {
           grouped[item.type] = {
             ...item.data,
             id: item.id,
-          };
+          } as Record<string, unknown>;
         } else {
           // For arrays (classes, events, etc.), store as array
           if (!grouped[item.type]) {
             grouped[item.type] = [];
           }
-          grouped[item.type].push({
+          (grouped[item.type] as unknown[]).push({
             ...item.data,
             id: item.id,
           });
