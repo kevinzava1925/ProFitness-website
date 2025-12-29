@@ -125,14 +125,25 @@ export default function AdminDashboard() {
         } catch (parseError) {
           errorMessage = responseText || errorMessage;
         }
-        console.error('Supabase storage upload error:', { status: response.status, message: errorMessage });
+        console.error('Supabase storage upload error:', { 
+          status: response.status, 
+          message: errorMessage,
+          responseText 
+        });
         throw new Error(errorMessage);
       }
 
       // Parse the successful response
-      const data = JSON.parse(responseText);
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse upload response:', responseText);
+        throw new Error('Invalid response from server');
+      }
       
       if (!data.url && !data.secure_url) {
+        console.error('Upload response missing URL:', data);
         throw new Error('No URL returned from storage');
       }
       
@@ -146,6 +157,9 @@ export default function AdminDashboard() {
       } else if (editingItem) {
         setEditingItem({ ...editingItem, [fieldName]: imageUrl });
       }
+      
+      // Show success message
+      alert('Image uploaded successfully!');
     } catch (error) {
       console.error('Upload error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to upload image. Please try again.';
@@ -202,14 +216,25 @@ export default function AdminDashboard() {
         } catch (parseError) {
           errorMessage = responseText || errorMessage;
         }
-        console.error('Supabase storage upload error:', { status: response.status, message: errorMessage });
+        console.error('Supabase storage upload error:', { 
+          status: response.status, 
+          message: errorMessage,
+          responseText 
+        });
         throw new Error(errorMessage);
       }
 
       // Parse the successful response
-      const data = JSON.parse(responseText);
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse upload response:', responseText);
+        throw new Error('Invalid response from server');
+      }
       
       if (!data.url && !data.secure_url) {
+        console.error('Upload response missing URL:', data);
         throw new Error('No URL returned from storage');
       }
       
@@ -1223,11 +1248,28 @@ export default function AdminDashboard() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) handleImageUpload(file, 'image');
+                        // Reset input so same file can be selected again
+                        e.target.value = '';
                       }}
                       disabled={uploading}
                     />
                   </label>
                 </div>
+                {editingCollaboration.image && (
+                  <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden max-w-md">
+                    <div className="relative aspect-video bg-gray-100">
+                      <Image
+                        src={editingCollaboration.image}
+                        alt="Preview"
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          console.error('Image preview error:', e);
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1300,11 +1342,28 @@ export default function AdminDashboard() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) handleImageUpload(file, 'image');
+                        // Reset input so same file can be selected again
+                        e.target.value = '';
                       }}
                       disabled={uploading}
                     />
                   </label>
                 </div>
+                {editingTrainer.image && (
+                  <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden max-w-md">
+                    <div className="relative aspect-square bg-gray-100">
+                      <Image
+                        src={editingTrainer.image}
+                        alt="Preview"
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          console.error('Image preview error:', e);
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -1431,11 +1490,28 @@ export default function AdminDashboard() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) handleImageUpload(file, 'image');
+                        // Reset input so same file can be selected again
+                        e.target.value = '';
                       }}
                       disabled={uploading}
                     />
                   </label>
                 </div>
+                {editingItem.image && (
+                  <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden max-w-md">
+                    <div className="relative aspect-video bg-gray-100">
+                      <Image
+                        src={editingItem.image}
+                        alt="Preview"
+                        fill
+                        className="object-cover"
+                        onError={(e) => {
+                          console.error('Image preview error:', e);
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
 
               {activeTab === 'shop' && (
@@ -1484,11 +1560,28 @@ export default function AdminDashboard() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) handleImageUpload(file, 'headerImage');
+                            // Reset input so same file can be selected again
+                            e.target.value = '';
                           }}
                           disabled={uploading}
                         />
                       </label>
                     </div>
+                    {editingItem.headerImage && (
+                      <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden max-w-md">
+                        <div className="relative aspect-video bg-gray-100">
+                          <Image
+                            src={editingItem.headerImage}
+                            alt="Header Preview"
+                            fill
+                            className="object-cover"
+                            onError={(e) => {
+                              console.error('Image preview error:', e);
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>

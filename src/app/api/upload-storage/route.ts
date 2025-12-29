@@ -46,17 +46,31 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(arrayBuffer);
 
     // Upload to Supabase Storage
-    const { data, error } = await supabase.storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('profitness')
       .upload(fileName, buffer, {
         contentType: file.type,
         upsert: false, // Don't overwrite existing files
       });
 
-    if (error) {
-      console.error('Supabase storage upload error:', error);
+    if (uploadError) {
+      console.error('Supabase storage upload error:', uploadError);
+      // Provide more helpful error messages
+      let errorMessage = uploadError.message || 'Failed to upload file';
+      if (uploadError.message?.includes('Bucket not found')) {
+        errorMessage = 'Storage bucket "profitness" not found. Please create it in Supabase Storage.';
+      } else if (uploadError.message?.includes('new row violates row-level security')) {
+        errorMessage = 'Storage bucket permissions issue. Please check bucket policies in Supabase.';
+      }
       return NextResponse.json(
-        { error: error.message || 'Failed to upload file' },
+        { error: errorMessage, details: uploadError },
+        { status: 500 }
+      );
+    }
+
+    if (!uploadData?.path) {
+      return NextResponse.json(
+        { error: 'Upload succeeded but no path returned' },
         { status: 500 }
       );
     }
@@ -64,11 +78,11 @@ export async function POST(request: NextRequest) {
     // Get public URL
     const { data: urlData } = supabase.storage
       .from('profitness')
-      .getPublicUrl(fileName);
+      .getPublicUrl(uploadData.path);
 
     if (!urlData?.publicUrl) {
       return NextResponse.json(
-        { error: 'Failed to get public URL' },
+        { error: 'Failed to get public URL. The file may need to be made public in Supabase Storage.' },
         { status: 500 }
       );
     }
@@ -90,5 +104,9 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+
+
+
 
 

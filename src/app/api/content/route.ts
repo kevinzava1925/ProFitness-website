@@ -62,13 +62,18 @@ export async function GET(request: NextRequest) {
           } as Record<string, unknown>;
         } else {
           // For arrays (classes, events, etc.), store as array
-          if (!grouped[item.type]) {
-            grouped[item.type] = [];
+          const typeKey = item.type;
+          if (!grouped[typeKey]) {
+            grouped[typeKey] = [];
           }
-          (grouped[item.type] as unknown[]).push({
-            ...item.data,
-            id: item.id,
-          });
+          // TypeScript now knows grouped[typeKey] is an array after the check above
+          const arrayValue = grouped[typeKey];
+          if (Array.isArray(arrayValue)) {
+            arrayValue.push({
+              ...item.data,
+              id: item.id,
+            });
+          }
         }
       });
 

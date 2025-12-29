@@ -9,8 +9,8 @@
         "start": "next start",
         "lint": "bunx tsc --noEmit && next lint",
         "format": "bunx biome format --write",
-        "deploy": "vercel --prod",
-        "deploy:preview": "vercel"
+        "deploy": "netlify deploy --prod",
+        "deploy:preview": "netlify deploy"
     },
     "dependencies": {
         "@supabase/supabase-js": "^2.86.0",
