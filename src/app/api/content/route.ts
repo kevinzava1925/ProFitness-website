@@ -66,14 +66,11 @@ export async function GET(request: NextRequest) {
           if (!grouped[typeKey]) {
             grouped[typeKey] = [];
           }
-          // TypeScript now knows grouped[typeKey] is an array after the check above
-          const arrayValue = grouped[typeKey];
-          if (Array.isArray(arrayValue)) {
-            arrayValue.push({
-              ...item.data,
-              id: item.id,
-            });
-          }
+          // Type assertion: we know it's an array because we just initialized it or it was already an array
+          (grouped[typeKey] as unknown[]).push({
+            ...item.data,
+            id: item.id,
+          });
         }
       });
 
