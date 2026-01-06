@@ -346,9 +346,10 @@ export default function AdminDashboard() {
         mediaUrl = data.url || data.secure_url;
         resourceType = data.type || (isVideo ? 'video' : 'image');
       }
+      
       const newHeroMedia: HeroMedia = {
         url: mediaUrl,
-        type: data.type || (isVideo ? 'video' : 'image')
+        type: resourceType as 'image' | 'video'
       };
 
       setHeroMedia(newHeroMedia);
