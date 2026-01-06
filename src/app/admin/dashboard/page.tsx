@@ -93,6 +93,23 @@ export default function AdminDashboard() {
   const handleImageUpload = async (file: File, fieldName: string) => {
     if (!file) return;
 
+    // Check file type - reject unsupported formats
+    const fileName = file.name.toLowerCase();
+    const fileExtension = fileName.split('.').pop();
+    const unsupportedFormats = ['heic', 'heif', 'raw', 'cr2', 'nef', 'orf', 'sr2'];
+    
+    if (unsupportedFormats.includes(fileExtension || '')) {
+      alert(`Unsupported file format: .${fileExtension}\n\nPlease convert your image to JPG, PNG, or WEBP format.\n\nFor HEIC files from iPhone:\n- Use "Convert to JPEG" on iPhone\n- Or use an online converter like heictojpg.com`);
+      return;
+    }
+
+    // Check if it's a valid image type
+    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+    if (!validImageTypes.includes(file.type) && !file.type.startsWith('image/')) {
+      alert(`Invalid file type: ${file.type}\n\nPlease upload a JPG, PNG, GIF, WEBP, or SVG image.`);
+      return;
+    }
+
     // Check file size (200MB limit for images - Cloudinary supports larger files)
     const maxSize = 200 * 1024 * 1024; // 200MB in bytes
     if (file.size > maxSize) {
