@@ -89,14 +89,14 @@ export default function AdminDashboard() {
   const [uploading, setUploading] = useState(false);
   const [uploadField, setUploadField] = useState<string | null>(null);
 
-  // Image upload function - Upload to Supabase Storage
+  // Image upload function - Upload to Cloudinary
   const handleImageUpload = async (file: File, fieldName: string) => {
     if (!file) return;
 
-    // Check file size (20MB limit for images)
-    const maxSize = 20 * 1024 * 1024; // 20MB in bytes
+    // Check file size (200MB limit for images - Cloudinary supports larger files)
+    const maxSize = 200 * 1024 * 1024; // 200MB in bytes
     if (file.size > maxSize) {
-      alert(`File is too large. Maximum size is 20MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      alert(`File is too large. Maximum size is 200MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
       return;
     }
 
@@ -108,8 +108,8 @@ export default function AdminDashboard() {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Upload to Supabase Storage via API
-      const response = await fetch('/api/upload-storage', {
+      // Upload to Cloudinary via API
+      const response = await fetch('/api/upload-direct', {
         method: 'POST',
         body: formData,
       });
@@ -125,7 +125,7 @@ export default function AdminDashboard() {
         } catch (parseError) {
           errorMessage = responseText || errorMessage;
         }
-        console.error('Supabase storage upload error:', { 
+        console.error('Cloudinary upload error:', { 
           status: response.status, 
           message: errorMessage,
           responseText 
@@ -144,7 +144,7 @@ export default function AdminDashboard() {
       
       if (!data.url && !data.secure_url) {
         console.error('Upload response missing URL:', data);
-        throw new Error('No URL returned from storage');
+        throw new Error('No URL returned from Cloudinary');
       }
       
       const imageUrl = data.url || data.secure_url;
@@ -170,7 +170,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Handle hero media upload (image or video) - Upload to Supabase Storage
+  // Handle hero media upload (image or video) - Upload to Cloudinary
   const handleHeroMediaUpload = async (file: File) => {
     if (!file) return;
 
@@ -183,10 +183,10 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Check file size (20MB for images, 200MB for videos)
-    const maxSize = isVideo ? 200 * 1024 * 1024 : 20 * 1024 * 1024; // 200MB for videos, 20MB for images
+    // Check file size (200MB for images, 500MB for videos - Cloudinary supports larger files)
+    const maxSize = isVideo ? 500 * 1024 * 1024 : 200 * 1024 * 1024; // 500MB for videos, 200MB for images
     if (file.size > maxSize) {
-      const maxSizeMB = isVideo ? 200 : 20;
+      const maxSizeMB = isVideo ? 500 : 200;
       alert(`File is too large. Maximum size is ${maxSizeMB}MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
       return;
     }
@@ -199,8 +199,8 @@ export default function AdminDashboard() {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Upload to Supabase Storage via API
-      const response = await fetch('/api/upload-storage', {
+      // Upload to Cloudinary via API
+      const response = await fetch('/api/upload-direct', {
         method: 'POST',
         body: formData,
       });
@@ -216,7 +216,7 @@ export default function AdminDashboard() {
         } catch (parseError) {
           errorMessage = responseText || errorMessage;
         }
-        console.error('Supabase storage upload error:', { 
+        console.error('Cloudinary upload error:', { 
           status: response.status, 
           message: errorMessage,
           responseText 
@@ -235,7 +235,7 @@ export default function AdminDashboard() {
       
       if (!data.url && !data.secure_url) {
         console.error('Upload response missing URL:', data);
-        throw new Error('No URL returned from storage');
+        throw new Error('No URL returned from Cloudinary');
       }
       
       const mediaUrl = data.url || data.secure_url;
