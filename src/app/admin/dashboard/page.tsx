@@ -121,50 +121,94 @@ export default function AdminDashboard() {
     setUploadField(fieldName);
 
     try {
-      // Create FormData for upload
-      const formData = new FormData();
-      formData.append('file', file);
-
-      // Upload to Cloudinary via API
-      const response = await fetch('/api/upload-direct', {
-        method: 'POST',
-        body: formData,
-      });
-
-      // Read response once
-      const responseText = await response.text();
+      // For files over 2MB, use direct Cloudinary upload to bypass Netlify body size limits
+      const useDirectUpload = file.size > 2 * 1024 * 1024; // 2MB threshold
       
-      if (!response.ok) {
-        let errorMessage = `Upload failed with status ${response.status}`;
-        try {
-          const errorData = JSON.parse(responseText);
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (parseError) {
-          errorMessage = responseText || errorMessage;
+      let imageUrl: string;
+      
+      if (useDirectUpload) {
+        // Direct upload to Cloudinary (bypasses Netlify limits)
+        const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
+        
+        // Get upload signature
+        const sigResponse = await fetch(`/api/upload-signature?resource_type=${resourceType}`);
+        if (!sigResponse.ok) {
+          throw new Error('Failed to get upload signature');
         }
-        console.error('Cloudinary upload error:', { 
-          status: response.status, 
-          message: errorMessage,
-          responseText 
-        });
-        throw new Error(errorMessage);
-      }
+        const sigData = await sigResponse.json();
+        
+        // Create FormData for Cloudinary direct upload
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', file);
+        uploadFormData.append('api_key', sigData.apiKey);
+        uploadFormData.append('timestamp', sigData.timestamp.toString());
+        uploadFormData.append('signature', sigData.signature);
+        uploadFormData.append('folder', sigData.folder);
+        if (resourceType !== 'image') {
+          uploadFormData.append('resource_type', resourceType);
+        }
+        
+        // Upload directly to Cloudinary
+        const cloudinaryResponse = await fetch(
+          `https://api.cloudinary.com/v1_1/${sigData.cloudName}/${resourceType}/upload`,
+          {
+            method: 'POST',
+            body: uploadFormData,
+          }
+        );
+        
+        if (!cloudinaryResponse.ok) {
+          const errorText = await cloudinaryResponse.text();
+          throw new Error(`Cloudinary upload failed: ${errorText}`);
+        }
+        
+        const cloudinaryData = await cloudinaryResponse.json();
+        imageUrl = cloudinaryData.secure_url || cloudinaryData.url;
+      } else {
+        // Use API route for smaller files (faster)
+        const formData = new FormData();
+        formData.append('file', file);
 
-      // Parse the successful response
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('Failed to parse upload response:', responseText);
-        throw new Error('Invalid response from server');
+        const response = await fetch('/api/upload-direct', {
+          method: 'POST',
+          body: formData,
+        });
+
+        // Read response once
+        const responseText = await response.text();
+        
+        if (!response.ok) {
+          let errorMessage = `Upload failed with status ${response.status}`;
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } catch (parseError) {
+            errorMessage = responseText || errorMessage;
+          }
+          console.error('Cloudinary upload error:', { 
+            status: response.status, 
+            message: errorMessage,
+            responseText 
+          });
+          throw new Error(errorMessage);
+        }
+
+        // Parse the successful response
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('Failed to parse upload response:', responseText);
+          throw new Error('Invalid response from server');
+        }
+        
+        if (!data.url && !data.secure_url) {
+          console.error('Upload response missing URL:', data);
+          throw new Error('No URL returned from Cloudinary');
+        }
+        
+        imageUrl = data.url || data.secure_url;
       }
-      
-      if (!data.url && !data.secure_url) {
-        console.error('Upload response missing URL:', data);
-        throw new Error('No URL returned from Cloudinary');
-      }
-      
-      const imageUrl = data.url || data.secure_url;
       
       // Update the appropriate field based on what we're editing
       if (activeTab === 'trainers' && editingTrainer) {
@@ -212,50 +256,96 @@ export default function AdminDashboard() {
     setUploadField('heroMedia');
 
     try {
-      // Create FormData for upload
-      const formData = new FormData();
-      formData.append('file', file);
-
-      // Upload to Cloudinary via API
-      const response = await fetch('/api/upload-direct', {
-        method: 'POST',
-        body: formData,
-      });
-
-      // Read response once
-      const responseText = await response.text();
+      // For files over 2MB, use direct Cloudinary upload to bypass Netlify body size limits
+      const useDirectUpload = file.size > 2 * 1024 * 1024; // 2MB threshold
       
-      if (!response.ok) {
-        let errorMessage = `Upload failed with status ${response.status}`;
-        try {
-          const errorData = JSON.parse(responseText);
-          errorMessage = errorData.error || errorData.message || errorMessage;
-        } catch (parseError) {
-          errorMessage = responseText || errorMessage;
+      let mediaUrl: string;
+      let resourceType: string;
+      
+      if (useDirectUpload) {
+        // Direct upload to Cloudinary (bypasses Netlify limits)
+        resourceType = isVideo ? 'video' : 'image';
+        
+        // Get upload signature
+        const sigResponse = await fetch(`/api/upload-signature?resource_type=${resourceType}`);
+        if (!sigResponse.ok) {
+          throw new Error('Failed to get upload signature');
         }
-        console.error('Cloudinary upload error:', { 
-          status: response.status, 
-          message: errorMessage,
-          responseText 
-        });
-        throw new Error(errorMessage);
-      }
+        const sigData = await sigResponse.json();
+        
+        // Create FormData for Cloudinary direct upload
+        const uploadFormData = new FormData();
+        uploadFormData.append('file', file);
+        uploadFormData.append('api_key', sigData.apiKey);
+        uploadFormData.append('timestamp', sigData.timestamp.toString());
+        uploadFormData.append('signature', sigData.signature);
+        uploadFormData.append('folder', sigData.folder);
+        if (resourceType !== 'image') {
+          uploadFormData.append('resource_type', resourceType);
+        }
+        
+        // Upload directly to Cloudinary
+        const cloudinaryResponse = await fetch(
+          `https://api.cloudinary.com/v1_1/${sigData.cloudName}/${resourceType}/upload`,
+          {
+            method: 'POST',
+            body: uploadFormData,
+          }
+        );
+        
+        if (!cloudinaryResponse.ok) {
+          const errorText = await cloudinaryResponse.text();
+          throw new Error(`Cloudinary upload failed: ${errorText}`);
+        }
+        
+        const cloudinaryData = await cloudinaryResponse.json();
+        mediaUrl = cloudinaryData.secure_url || cloudinaryData.url;
+      } else {
+        // Use API route for smaller files (faster)
+        const formData = new FormData();
+        formData.append('file', file);
 
-      // Parse the successful response
-      let data;
-      try {
-        data = JSON.parse(responseText);
-      } catch (parseError) {
-        console.error('Failed to parse upload response:', responseText);
-        throw new Error('Invalid response from server');
+        const response = await fetch('/api/upload-direct', {
+          method: 'POST',
+          body: formData,
+        });
+
+        // Read response once
+        const responseText = await response.text();
+        
+        if (!response.ok) {
+          let errorMessage = `Upload failed with status ${response.status}`;
+          try {
+            const errorData = JSON.parse(responseText);
+            errorMessage = errorData.error || errorData.message || errorMessage;
+          } catch (parseError) {
+            errorMessage = responseText || errorMessage;
+          }
+          console.error('Cloudinary upload error:', { 
+            status: response.status, 
+            message: errorMessage,
+            responseText 
+          });
+          throw new Error(errorMessage);
+        }
+
+        // Parse the successful response
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('Failed to parse upload response:', responseText);
+          throw new Error('Invalid response from server');
+        }
+        
+        if (!data.url && !data.secure_url) {
+          console.error('Upload response missing URL:', data);
+          throw new Error('No URL returned from Cloudinary');
+        }
+        
+        mediaUrl = data.url || data.secure_url;
+        resourceType = data.type || (isVideo ? 'video' : 'image');
       }
-      
-      if (!data.url && !data.secure_url) {
-        console.error('Upload response missing URL:', data);
-        throw new Error('No URL returned from Cloudinary');
-      }
-      
-      const mediaUrl = data.url || data.secure_url;
       const newHeroMedia: HeroMedia = {
         url: mediaUrl,
         type: data.type || (isVideo ? 'video' : 'image')

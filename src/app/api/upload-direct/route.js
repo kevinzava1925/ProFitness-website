@@ -4,6 +4,9 @@ import cloudinary from '@/utils/cloudinary';
 export const maxDuration = 60; // 60 seconds max execution time for large videos
 export const runtime = 'nodejs';
 
+// Disable body parsing limit - we'll handle it manually with FormData
+export const dynamic = 'force-dynamic';
+
 export async function POST(req) {
   try {
     // Check if Cloudinary is configured

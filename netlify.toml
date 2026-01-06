@@ -6,6 +6,14 @@
   NODE_VERSION = "20"
   NODE_OPTIONS = "--max-old-space-size=4096"
 
+# Increase request body size limit for file uploads (up to 200MB)
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+[functions]
+  # Increase function timeout and memory for large file uploads
+  node_bundler = "esbuild"
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
 
