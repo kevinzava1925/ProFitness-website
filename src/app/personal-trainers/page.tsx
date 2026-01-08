@@ -22,56 +22,78 @@ export default function PersonalTrainersPage() {
   const [trainers, setTrainers] = useState<Trainer[]>([]);
 
   useEffect(() => {
-    const loadedTrainers = localStorage.getItem("trainers");
-    if (loadedTrainers) {
-      setTrainers(JSON.parse(loadedTrainers));
-    } else {
-      // Default trainers
-      const defaultTrainers = [
-        { 
-          id: '1', 
-          name: 'John Smith', 
-          image: 'https://ext.same-assets.com/443545936/1729744263.webp', 
-          specialty: 'Strength Training',
-          bio: 'With over 10 years of experience in strength training and bodybuilding, John helps clients build muscle and achieve their fitness goals.',
-          instagramUrl: '#',
-          facebookUrl: '#',
-          twitterUrl: '#'
-        },
-        { 
-          id: '2', 
-          name: 'Sarah Johnson', 
-          image: 'https://ext.same-assets.com/443545936/691732246.webp', 
-          specialty: 'Yoga & Flexibility',
-          bio: 'Certified yoga instructor specializing in flexibility, mobility, and mindfulness practices for overall wellness.',
-          instagramUrl: '#',
-          facebookUrl: '#',
-          linkedinUrl: '#'
-        },
-        { 
-          id: '3', 
-          name: 'Mike Chen', 
-          image: 'https://ext.same-assets.com/443545936/1129713061.webp', 
-          specialty: 'HIIT & Cardio',
-          bio: 'Expert in high-intensity interval training and cardiovascular fitness, helping clients burn fat and improve endurance.',
-          instagramUrl: '#',
-          twitterUrl: '#',
-          linkedinUrl: '#'
-        },
-        { 
-          id: '4', 
-          name: 'Emma Wilson', 
-          image: 'https://ext.same-assets.com/443545936/1537262654.webp', 
-          specialty: 'Nutrition & Wellness',
-          bio: 'Registered dietitian and wellness coach specializing in nutrition planning and lifestyle optimization.',
-          instagramUrl: '#',
-          facebookUrl: '#',
-          linkedinUrl: '#'
+    const loadTrainers = async () => {
+      try {
+        // Always try to load from API first (Supabase) - add cache busting to ensure fresh data
+        const response = await fetch('/api/content?type=trainers&' + new Date().getTime());
+        if (response.ok) {
+          const apiTrainers = await response.json();
+          
+          // Set trainers from API if available
+          if (Array.isArray(apiTrainers) && apiTrainers.length > 0) {
+            setTrainers(apiTrainers);
+            return; // Successfully loaded from API
+          }
+        } else {
+          console.error('API response not OK:', response.status, response.statusText);
         }
-      ];
-      setTrainers(defaultTrainers);
-      localStorage.setItem("trainers", JSON.stringify(defaultTrainers));
-    }
+      } catch (error) {
+        console.error('Error loading from API:', error);
+      }
+
+      // Fallback to localStorage if API fails
+      const loadedTrainers = localStorage.getItem("trainers");
+      if (loadedTrainers) {
+        setTrainers(JSON.parse(loadedTrainers));
+      } else {
+        // Default trainers
+        const defaultTrainers = [
+          { 
+            id: '1', 
+            name: 'John Smith', 
+            image: 'https://ext.same-assets.com/443545936/1729744263.webp', 
+            specialty: 'Strength Training',
+            bio: 'With over 10 years of experience in strength training and bodybuilding, John helps clients build muscle and achieve their fitness goals.',
+            instagramUrl: '#',
+            facebookUrl: '#',
+            twitterUrl: '#'
+          },
+          { 
+            id: '2', 
+            name: 'Sarah Johnson', 
+            image: 'https://ext.same-assets.com/443545936/691732246.webp', 
+            specialty: 'Yoga & Flexibility',
+            bio: 'Certified yoga instructor specializing in flexibility, mobility, and mindfulness practices for overall wellness.',
+            instagramUrl: '#',
+            facebookUrl: '#',
+            linkedinUrl: '#'
+          },
+          { 
+            id: '3', 
+            name: 'Mike Chen', 
+            image: 'https://ext.same-assets.com/443545936/1129713061.webp', 
+            specialty: 'HIIT & Cardio',
+            bio: 'Expert in high-intensity interval training and cardiovascular fitness, helping clients burn fat and improve endurance.',
+            instagramUrl: '#',
+            twitterUrl: '#',
+            linkedinUrl: '#'
+          },
+          { 
+            id: '4', 
+            name: 'Emma Wilson', 
+            image: 'https://ext.same-assets.com/443545936/1537262654.webp', 
+            specialty: 'Nutrition & Wellness',
+            bio: 'Registered dietitian and wellness coach specializing in nutrition planning and lifestyle optimization.',
+            instagramUrl: '#',
+            facebookUrl: '#',
+            linkedinUrl: '#'
+          }
+        ];
+        setTrainers(defaultTrainers);
+      }
+    };
+
+    loadTrainers();
   }, []);
 
   return (
