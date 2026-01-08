@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type Trainer = {
   id: string;
@@ -51,7 +52,7 @@ export default function PersonalTrainersPage() {
           { 
             id: '1', 
             name: 'John Smith', 
-            image: 'https://ext.same-assets.com/443545936/1729744263.webp', 
+            image: DEFAULT_IMAGES.trainers.trainer1, 
             specialty: 'Strength Training',
             bio: 'With over 10 years of experience in strength training and bodybuilding, John helps clients build muscle and achieve their fitness goals.',
             instagramUrl: '#',
@@ -61,7 +62,7 @@ export default function PersonalTrainersPage() {
           { 
             id: '2', 
             name: 'Sarah Johnson', 
-            image: 'https://ext.same-assets.com/443545936/691732246.webp', 
+            image: DEFAULT_IMAGES.trainers.trainer2, 
             specialty: 'Yoga & Flexibility',
             bio: 'Certified yoga instructor specializing in flexibility, mobility, and mindfulness practices for overall wellness.',
             instagramUrl: '#',
@@ -71,7 +72,7 @@ export default function PersonalTrainersPage() {
           { 
             id: '3', 
             name: 'Mike Chen', 
-            image: 'https://ext.same-assets.com/443545936/1129713061.webp', 
+            image: DEFAULT_IMAGES.trainers.trainer3, 
             specialty: 'HIIT & Cardio',
             bio: 'Expert in high-intensity interval training and cardiovascular fitness, helping clients burn fat and improve endurance.',
             instagramUrl: '#',
@@ -81,7 +82,7 @@ export default function PersonalTrainersPage() {
           { 
             id: '4', 
             name: 'Emma Wilson', 
-            image: 'https://ext.same-assets.com/443545936/1537262654.webp', 
+            image: DEFAULT_IMAGES.trainers.trainer4, 
             specialty: 'Nutrition & Wellness',
             bio: 'Registered dietitian and wellness coach specializing in nutrition planning and lifestyle optimization.',
             instagramUrl: '#',
@@ -105,7 +106,7 @@ export default function PersonalTrainersPage() {
         <section className="relative h-[40vh] sm:h-[50vh] flex items-center justify-center bg-black overflow-hidden">
           <div className="absolute inset-0 z-0">
             <Image
-              src="https://ext.same-assets.com/443545936/3789989498.webp"
+              src={DEFAULT_IMAGES.hero}
               alt="Personal Trainers"
               fill
               className="object-cover opacity-60"
@@ -152,7 +153,7 @@ export default function PersonalTrainersPage() {
                       {trainer.instagramUrl && (
                         <a href={trainer.instagramUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
                           <Image
-                            src="https://ext.same-assets.com/443545936/2173459103.svg"
+                            src={DEFAULT_IMAGES.instagram}
                             alt="Instagram"
                             width={24}
                             height={24}
@@ -162,7 +163,7 @@ export default function PersonalTrainersPage() {
                       {trainer.facebookUrl && (
                         <a href={trainer.facebookUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
                           <Image
-                            src="https://ext.same-assets.com/443545936/3615542385.svg"
+                            src={DEFAULT_IMAGES.facebook}
                             alt="Facebook"
                             width={24}
                             height={24}

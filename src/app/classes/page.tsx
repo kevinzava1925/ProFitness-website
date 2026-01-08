@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type ClassItem = {
   id: string;
@@ -47,12 +48,12 @@ export default function ClassesPage() {
       } else {
         // Default classes
         const defaultClasses = [
-          { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
-          { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
-          { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
-          { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
-          { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
-          { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
+          { id: '1', name: 'MUAY THAI', image: DEFAULT_IMAGES.classes.muayThai, description: 'Traditional Thai Boxing' },
+          { id: '2', name: 'FITNESS', image: DEFAULT_IMAGES.classes.fitness, description: 'Strength and Conditioning' },
+          { id: '3', name: 'MMA', image: DEFAULT_IMAGES.classes.mma, description: 'Mixed Martial Arts' },
+          { id: '4', name: 'BJJ', image: DEFAULT_IMAGES.classes.bjj, description: 'Brazilian Jiu-Jitsu' },
+          { id: '5', name: 'BOXING', image: DEFAULT_IMAGES.classes.boxing, description: 'Western Boxing' },
+          { id: '6', name: 'RECOVERY', image: DEFAULT_IMAGES.classes.recovery, description: 'Yoga and Massage' }
         ];
         setClasses(defaultClasses);
       }
@@ -70,7 +71,7 @@ export default function ClassesPage() {
         <section className="relative h-[40vh] sm:h-[50vh] flex items-center justify-center bg-black overflow-hidden">
           <div className="absolute inset-0 z-0">
             <Image
-              src="https://ext.same-assets.com/443545936/3789989498.webp"
+              src={DEFAULT_IMAGES.hero}
               alt="Our Classes"
               fill
               className="object-cover opacity-60"

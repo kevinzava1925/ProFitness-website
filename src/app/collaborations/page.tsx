@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type CollaborationItem = {
   id: string;
@@ -23,10 +24,10 @@ export default function CollaborationsPage() {
     } else {
       // Default collaborations
       const defaultCollaborations = [
-        { id: '1', name: 'Fitness Brand A', image: 'https://ext.same-assets.com/443545936/1859491465.webp', description: 'Premium fitness equipment and gear' },
-        { id: '2', name: 'Nutrition Company B', image: 'https://ext.same-assets.com/443545936/3860077197.webp', description: 'Health supplements and nutrition products' },
-        { id: '3', name: 'Sports Apparel C', image: 'https://ext.same-assets.com/443545936/2710426474.webp', description: 'High-quality athletic wear and accessories' },
-        { id: '4', name: 'Wellness Partner D', image: 'https://ext.same-assets.com/443545936/1859491465.webp', description: 'Recovery and wellness solutions' }
+        { id: '1', name: 'Fitness Brand A', image: DEFAULT_IMAGES.collaborations.brandA, description: 'Premium fitness equipment and gear' },
+        { id: '2', name: 'Nutrition Company B', image: DEFAULT_IMAGES.collaborations.brandB, description: 'Health supplements and nutrition products' },
+        { id: '3', name: 'Sports Apparel C', image: DEFAULT_IMAGES.shop.tshirt, description: 'High-quality athletic wear and accessories' },
+        { id: '4', name: 'Wellness Partner D', image: DEFAULT_IMAGES.collaborations.brandA, description: 'Recovery and wellness solutions' }
       ];
       setCollaborations(defaultCollaborations);
       localStorage.setItem("collaborations", JSON.stringify(defaultCollaborations));
@@ -42,7 +43,7 @@ export default function CollaborationsPage() {
         <section className="relative h-[40vh] sm:h-[50vh] flex items-center justify-center bg-black overflow-hidden">
           <div className="absolute inset-0 z-0">
             <Image
-              src="https://ext.same-assets.com/443545936/3789989498.webp"
+              src={DEFAULT_IMAGES.hero}
               alt="Collaborations"
               fill
               className="object-cover opacity-60"

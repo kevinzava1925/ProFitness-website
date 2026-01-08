@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
+import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type ContentItem = {
   id: string;
@@ -446,7 +447,15 @@ export default function AdminDashboard() {
           if (allContent.collaborations && Array.isArray(allContent.collaborations)) setCollaborations(allContent.collaborations);
           if (allContent.trainers && Array.isArray(allContent.trainers)) setTrainers(allContent.trainers);
           if (allContent.amenities && Array.isArray(allContent.amenities)) setAmenities(allContent.amenities);
-          if (allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url) setHeroMedia(allContent.hero);
+          if (allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url) {
+            setHeroMedia(allContent.hero);
+          } else {
+            // Only set default if API didn't provide hero
+            setHeroMedia({
+              url: DEFAULT_IMAGES.hero,
+              type: "image"
+            });
+          }
           
           return; // Successfully loaded from API
         }
@@ -463,12 +472,12 @@ export default function AdminDashboard() {
       if (loadedClasses) setClasses(JSON.parse(loadedClasses));
       else {
         const defaultClasses = [
-          { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
-          { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
-          { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
-          { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
-          { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
-          { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
+          { id: '1', name: 'MUAY THAI', image: DEFAULT_IMAGES.classes.muayThai, description: 'Traditional Thai Boxing' },
+          { id: '2', name: 'FITNESS', image: DEFAULT_IMAGES.classes.fitness, description: 'Strength and Conditioning' },
+          { id: '3', name: 'MMA', image: DEFAULT_IMAGES.classes.mma, description: 'Mixed Martial Arts' },
+          { id: '4', name: 'BJJ', image: DEFAULT_IMAGES.classes.bjj, description: 'Brazilian Jiu-Jitsu' },
+          { id: '5', name: 'BOXING', image: DEFAULT_IMAGES.classes.boxing, description: 'Western Boxing' },
+          { id: '6', name: 'RECOVERY', image: DEFAULT_IMAGES.classes.recovery, description: 'Yoga and Massage' }
         ];
         setClasses(defaultClasses);
       }
@@ -476,9 +485,9 @@ export default function AdminDashboard() {
       if (loadedEvents) setEvents(JSON.parse(loadedEvents));
       else {
         const defaultEvents = [
-          { id: '1', name: 'Intro to Martial Arts for FLINTA*', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'SAMSTAG & SONNTAG', description: 'Das Wochenendseminar von und für FLINTA*s zur Einführung in den Kampfsport.' },
-          { id: '2', name: 'Fightchallenge Round Six', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: '6.12.25', description: 'Wir präsentieren "FightChallenge - Round Six' },
-          { id: '3', name: 'Defensive Boxing Wrestling for MMA', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: '13.12.25', description: 'Join and learn all about boxing and wrestling for MMA.' }
+          { id: '1', name: 'Intro to Martial Arts for FLINTA*', image: DEFAULT_IMAGES.events.event1, date: 'SAMSTAG & SONNTAG', description: 'Das Wochenendseminar von und für FLINTA*s zur Einführung in den Kampfsport.' },
+          { id: '2', name: 'Fightchallenge Round Six', image: DEFAULT_IMAGES.events.event2, date: '6.12.25', description: 'Wir präsentieren "FightChallenge - Round Six' },
+          { id: '3', name: 'Defensive Boxing Wrestling for MMA', image: DEFAULT_IMAGES.events.event3, date: '13.12.25', description: 'Join and learn all about boxing and wrestling for MMA.' }
         ];
         setEvents(defaultEvents);
       }
@@ -486,10 +495,10 @@ export default function AdminDashboard() {
       if (loadedShop) setShopItems(JSON.parse(loadedShop));
       else {
         const defaultShop = [
-          { id: '1', name: 'Cap', image: 'https://ext.same-assets.com/443545936/1859491465.webp' },
-          { id: '2', name: 'Duffle Bag', image: 'https://ext.same-assets.com/443545936/3860077197.webp' },
-          { id: '3', name: 'T-Shirt', image: 'https://ext.same-assets.com/443545936/2710426474.webp' },
-          { id: '4', name: 'Hoodie', image: 'https://ext.same-assets.com/443545936/480816838.webp' }
+          { id: '1', name: 'Cap', image: DEFAULT_IMAGES.shop.cap },
+          { id: '2', name: 'Duffle Bag', image: DEFAULT_IMAGES.shop.duffle },
+          { id: '3', name: 'T-Shirt', image: DEFAULT_IMAGES.shop.tshirt },
+          { id: '4', name: 'Hoodie', image: DEFAULT_IMAGES.shop.hoodie }
         ];
         setShopItems(defaultShop);
       }
@@ -497,8 +506,8 @@ export default function AdminDashboard() {
       if (loadedPartners) setPartners(JSON.parse(loadedPartners));
       else {
         const defaultPartners = [
-          { id: '1', name: 'GEMMAF', image: 'https://ext.same-assets.com/443545936/2709833716.webp' },
-          { id: '2', name: 'AMMAG', image: 'https://ext.same-assets.com/443545936/59465891.webp' }
+          { id: '1', name: 'GEMMAF', image: DEFAULT_IMAGES.partners.gemmaf },
+          { id: '2', name: 'AMMAG', image: DEFAULT_IMAGES.partners.ammag }
         ];
         setPartners(defaultPartners);
       }
@@ -561,8 +570,8 @@ export default function AdminDashboard() {
         setCollaborations(JSON.parse(loadedCollaborations));
       } else {
         const defaultCollaborations: CollaborationItem[] = [
-          { id: '1', name: 'Fitness Brand A', image: 'https://ext.same-assets.com/443545936/1859491465.webp', description: 'Premium fitness equipment and gear' },
-          { id: '2', name: 'Nutrition Company B', image: 'https://ext.same-assets.com/443545936/3860077197.webp', description: 'Health supplements and nutrition products' }
+          { id: '1', name: 'Fitness Brand A', image: DEFAULT_IMAGES.collaborations.brandA, description: 'Premium fitness equipment and gear' },
+          { id: '2', name: 'Nutrition Company B', image: DEFAULT_IMAGES.collaborations.brandB, description: 'Health supplements and nutrition products' }
         ];
         setCollaborations(defaultCollaborations);
       }
@@ -575,7 +584,7 @@ export default function AdminDashboard() {
           { 
             id: '1', 
             name: 'John Smith', 
-            image: 'https://ext.same-assets.com/443545936/1729744263.webp', 
+            image: DEFAULT_IMAGES.trainers.trainer1, 
             specialty: 'Strength Training',
             bio: 'With over 10 years of experience in strength training and bodybuilding, John helps clients build muscle and achieve their fitness goals.',
             instagramUrl: '#',
@@ -584,7 +593,7 @@ export default function AdminDashboard() {
           { 
             id: '2', 
             name: 'Sarah Johnson', 
-            image: 'https://ext.same-assets.com/443545936/691732246.webp', 
+            image: DEFAULT_IMAGES.trainers.trainer2, 
             specialty: 'Yoga & Flexibility',
             bio: 'Certified yoga instructor specializing in flexibility, mobility, and mindfulness practices for overall wellness.',
             instagramUrl: '#',
@@ -599,12 +608,12 @@ export default function AdminDashboard() {
         setAmenities(JSON.parse(loadedAmenities));
       } else {
         const defaultAmenities: ContentItem[] = [
-          { id: '1', name: 'Locker Rooms', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Spacious locker rooms with showers and changing facilities' },
-          { id: '2', name: 'Cardio Equipment', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
-          { id: '3', name: 'Free Weights', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
-          { id: '4', name: 'Group Classes', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Multiple group fitness studios for various classes' },
-          { id: '5', name: 'Personal Training', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Private training areas with certified personal trainers' },
-          { id: '6', name: 'Sauna & Steam Room', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Relaxation facilities for post-workout recovery' }
+          { id: '1', name: 'Locker Rooms', image: DEFAULT_IMAGES.amenities.locker, description: 'Spacious locker rooms with showers and changing facilities' },
+          { id: '2', name: 'Cardio Equipment', image: DEFAULT_IMAGES.amenities.cardio, description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
+          { id: '3', name: 'Free Weights', image: DEFAULT_IMAGES.amenities.weights, description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
+          { id: '4', name: 'Group Classes', image: DEFAULT_IMAGES.amenities.classes, description: 'Multiple group fitness studios for various classes' },
+          { id: '5', name: 'Personal Training', image: DEFAULT_IMAGES.amenities.training, description: 'Private training areas with certified personal trainers' },
+          { id: '6', name: 'Sauna & Steam Room', image: DEFAULT_IMAGES.amenities.sauna, description: 'Relaxation facilities for post-workout recovery' }
         ];
         setAmenities(defaultAmenities);
       }
@@ -613,11 +622,14 @@ export default function AdminDashboard() {
       if (loadedHeroMedia) {
         setHeroMedia(JSON.parse(loadedHeroMedia));
       } else {
-        const defaultHero: HeroMedia = {
-          url: "https://ext.same-assets.com/443545936/3789989498.webp",
-          type: "image"
-        };
-        setHeroMedia(defaultHero);
+        // Only set default hero if not already set from API
+        if (!heroMedia) {
+          const defaultHero: HeroMedia = {
+            url: DEFAULT_IMAGES.hero,
+            type: "image"
+          };
+          setHeroMedia(defaultHero);
+        }
       }
     };
 

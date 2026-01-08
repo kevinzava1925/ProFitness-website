@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
+import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type ContentItem = {
   id: string;
@@ -80,7 +81,7 @@ export default function Home() {
           } else {
             // Only use default if API doesn't have hero data
             setHeroMedia({
-              url: "https://ext.same-assets.com/443545936/3789989498.webp",
+              url: DEFAULT_IMAGES.hero,
               type: "image"
             });
           }
@@ -88,12 +89,12 @@ export default function Home() {
           // Use defaults for missing types
           if (!allContent.classes || !Array.isArray(allContent.classes) || allContent.classes.length === 0) {
             const defaultClasses = [
-              { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
-              { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
-              { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
-              { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
-              { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
-              { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
+              { id: '1', name: 'MUAY THAI', image: DEFAULT_IMAGES.classes.muayThai, description: 'Traditional Thai Boxing' },
+              { id: '2', name: 'FITNESS', image: DEFAULT_IMAGES.classes.fitness, description: 'Strength and Conditioning' },
+              { id: '3', name: 'MMA', image: DEFAULT_IMAGES.classes.mma, description: 'Mixed Martial Arts' },
+              { id: '4', name: 'BJJ', image: DEFAULT_IMAGES.classes.bjj, description: 'Brazilian Jiu-Jitsu' },
+              { id: '5', name: 'BOXING', image: DEFAULT_IMAGES.classes.boxing, description: 'Western Boxing' },
+              { id: '6', name: 'RECOVERY', image: DEFAULT_IMAGES.classes.recovery, description: 'Yoga and Massage' }
             ];
             setClasses(defaultClasses);
           }
@@ -103,7 +104,7 @@ export default function Home() {
           console.error('API response not OK:', response.status, response.statusText);
           // If API fails, use defaults (not localStorage)
           setHeroMedia({
-            url: "https://ext.same-assets.com/443545936/3789989498.webp",
+            url: DEFAULT_IMAGES.hero,
             type: "image"
           });
         }
@@ -111,7 +112,7 @@ export default function Home() {
         console.error('Error loading from API:', error);
         // If API fails, use defaults (not localStorage)
         setHeroMedia({
-          url: "https://ext.same-assets.com/443545936/3789989498.webp",
+          url: DEFAULT_IMAGES.hero,
           type: "image"
         });
       }
@@ -126,12 +127,12 @@ export default function Home() {
     else {
       // Default classes
       const defaultClasses = [
-        { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
-        { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
-        { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
-        { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
-        { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
-        { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
+        { id: '1', name: 'MUAY THAI', image: DEFAULT_IMAGES.classes.muayThai, description: 'Traditional Thai Boxing' },
+        { id: '2', name: 'FITNESS', image: DEFAULT_IMAGES.classes.fitness, description: 'Strength and Conditioning' },
+        { id: '3', name: 'MMA', image: DEFAULT_IMAGES.classes.mma, description: 'Mixed Martial Arts' },
+        { id: '4', name: 'BJJ', image: DEFAULT_IMAGES.classes.bjj, description: 'Brazilian Jiu-Jitsu' },
+        { id: '5', name: 'BOXING', image: DEFAULT_IMAGES.classes.boxing, description: 'Western Boxing' },
+        { id: '6', name: 'RECOVERY', image: DEFAULT_IMAGES.classes.recovery, description: 'Yoga and Massage' }
       ];
       setClasses(defaultClasses);
     }
@@ -139,12 +140,12 @@ export default function Home() {
     if (loadedEvents) setEvents(JSON.parse(loadedEvents));
     else {
       const defaultEvents = [
-        { id: '1', name: 'Intro to Martial Arts for FLINTA*', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'SAMSTAG & SONNTAG', description: 'Das Wochenendseminar von und für FLINTA*s zur Einführung in den Kampfsport.' },
-        { id: '2', name: 'ProFitness Annual Challenge', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: '6.12.25', description: 'Join us for our annual fitness challenge and celebrate strength, endurance, and community at ProFitness Health Club.' },
-        { id: '3', name: 'Defensive-Boxing-Wrestling-for-MMA', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: '13.12.25', description: 'Join and learn all about boxing and wrestling for MMA.' },
-        { id: '4', name: 'Boxing Training', image: 'https://ext.same-assets.com/443545936/1760012837.jpeg', date: 'SATURDAYS', description: 'Advanced boxing training for experienced boxers. Every Saturday from 13:00 till 15:00 at ProFitness Health Club.' },
-        { id: '5', name: 'Gracie Academy Berlin: Open Mat', image: 'https://ext.same-assets.com/443545936/459894971.png', date: 'SONNTAGS', description: 'Open Mat für Grappling und BJJ' },
-        { id: '6', name: 'Kardia - Muay Thai Sparring', image: 'https://ext.same-assets.com/443545936/3867060023.jpeg', date: 'SONNTAGS', description: 'Fortgeschrittenes Muay Thai Sparring' }
+        { id: '1', name: 'Intro to Martial Arts for FLINTA*', image: DEFAULT_IMAGES.events.event1, date: 'SAMSTAG & SONNTAG', description: 'Das Wochenendseminar von und für FLINTA*s zur Einführung in den Kampfsport.' },
+        { id: '2', name: 'ProFitness Annual Challenge', image: DEFAULT_IMAGES.events.event2, date: '6.12.25', description: 'Join us for our annual fitness challenge and celebrate strength, endurance, and community at ProFitness Health Club.' },
+        { id: '3', name: 'Defensive-Boxing-Wrestling-for-MMA', image: DEFAULT_IMAGES.events.event3, date: '13.12.25', description: 'Join and learn all about boxing and wrestling for MMA.' },
+        { id: '4', name: 'Boxing Training', image: DEFAULT_IMAGES.events.event4, date: 'SATURDAYS', description: 'Advanced boxing training for experienced boxers. Every Saturday from 13:00 till 15:00 at ProFitness Health Club.' },
+        { id: '5', name: 'Gracie Academy Berlin: Open Mat', image: DEFAULT_IMAGES.events.event5, date: 'SONNTAGS', description: 'Open Mat für Grappling und BJJ' },
+        { id: '6', name: 'Kardia - Muay Thai Sparring', image: DEFAULT_IMAGES.events.event6, date: 'SONNTAGS', description: 'Fortgeschrittenes Muay Thai Sparring' }
       ];
       setEvents(defaultEvents);
     }
@@ -152,10 +153,10 @@ export default function Home() {
     if (loadedShop) setShopItems(JSON.parse(loadedShop));
     else {
       const defaultShop = [
-        { id: '1', name: 'T-Shirt', image: 'https://ext.same-assets.com/443545936/2710426474.webp' },
-        { id: '2', name: 'Hoodie', image: 'https://ext.same-assets.com/443545936/480816838.webp' },
-        { id: '3', name: 'Cap', image: 'https://ext.same-assets.com/443545936/1859491465.webp' },
-        { id: '4', name: 'Duffle Bag', image: 'https://ext.same-assets.com/443545936/3860077197.webp' }
+        { id: '1', name: 'T-Shirt', image: DEFAULT_IMAGES.shop.tshirt },
+        { id: '2', name: 'Hoodie', image: DEFAULT_IMAGES.shop.hoodie },
+        { id: '3', name: 'Cap', image: DEFAULT_IMAGES.shop.cap },
+        { id: '4', name: 'Duffle Bag', image: DEFAULT_IMAGES.shop.duffle }
       ];
       setShopItems(defaultShop);
     }
@@ -163,8 +164,8 @@ export default function Home() {
     if (loadedPartners) setPartners(JSON.parse(loadedPartners));
     else {
       const defaultPartners = [
-        { id: '1', name: 'GEMMAF', image: 'https://ext.same-assets.com/443545936/2709833716.webp' },
-        { id: '2', name: 'AMMAG', image: 'https://ext.same-assets.com/443545936/59465891.webp' }
+        { id: '1', name: 'GEMMAF', image: DEFAULT_IMAGES.partners.gemmaf },
+        { id: '2', name: 'AMMAG', image: DEFAULT_IMAGES.partners.ammag }
       ];
       setPartners(defaultPartners);
     }
@@ -177,7 +178,7 @@ export default function Home() {
         { 
           id: '1', 
           name: 'John Smith', 
-          image: 'https://ext.same-assets.com/443545936/1729744263.webp', 
+          image: DEFAULT_IMAGES.trainers.trainer1, 
           specialty: 'Strength Training',
           instagramUrl: '#',
           facebookUrl: '#'
@@ -185,7 +186,7 @@ export default function Home() {
         { 
           id: '2', 
           name: 'Sarah Johnson', 
-          image: 'https://ext.same-assets.com/443545936/691732246.webp', 
+          image: DEFAULT_IMAGES.trainers.trainer2, 
           specialty: 'Yoga & Flexibility',
           instagramUrl: '#',
           linkedinUrl: '#'
@@ -193,7 +194,7 @@ export default function Home() {
         { 
           id: '3', 
           name: 'Mike Chen', 
-          image: 'https://ext.same-assets.com/443545936/1129713061.webp', 
+          image: DEFAULT_IMAGES.trainers.trainer3, 
           specialty: 'HIIT & Cardio',
           instagramUrl: '#',
           twitterUrl: '#'
@@ -201,7 +202,7 @@ export default function Home() {
         { 
           id: '4', 
           name: 'Emma Wilson', 
-          image: 'https://ext.same-assets.com/443545936/1537262654.webp', 
+          image: DEFAULT_IMAGES.trainers.trainer4, 
           specialty: 'Nutrition & Wellness',
           instagramUrl: '#',
           facebookUrl: '#'
@@ -215,12 +216,12 @@ export default function Home() {
       setAmenities(JSON.parse(loadedAmenities));
     } else {
       const defaultAmenities = [
-        { id: '1', name: 'Locker Rooms', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Spacious locker rooms with showers and changing facilities' },
-        { id: '2', name: 'Cardio Equipment', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
-        { id: '3', name: 'Free Weights', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
-        { id: '4', name: 'Group Classes', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Multiple group fitness studios for various classes' },
-        { id: '5', name: 'Personal Training', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Private training areas with certified personal trainers' },
-        { id: '6', name: 'Sauna & Steam Room', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Relaxation facilities for post-workout recovery' }
+        { id: '1', name: 'Locker Rooms', image: DEFAULT_IMAGES.amenities.locker, description: 'Spacious locker rooms with showers and changing facilities' },
+        { id: '2', name: 'Cardio Equipment', image: DEFAULT_IMAGES.amenities.cardio, description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
+        { id: '3', name: 'Free Weights', image: DEFAULT_IMAGES.amenities.weights, description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
+        { id: '4', name: 'Group Classes', image: DEFAULT_IMAGES.amenities.classes, description: 'Multiple group fitness studios for various classes' },
+        { id: '5', name: 'Personal Training', image: DEFAULT_IMAGES.amenities.training, description: 'Private training areas with certified personal trainers' },
+        { id: '6', name: 'Sauna & Steam Room', image: DEFAULT_IMAGES.amenities.sauna, description: 'Relaxation facilities for post-workout recovery' }
       ];
       setAmenities(defaultAmenities);
     }
@@ -252,7 +253,7 @@ export default function Home() {
               </video>
             ) : (
               <Image
-                src={heroMedia?.url || "https://ext.same-assets.com/443545936/3789989498.webp"}
+                src={heroMedia?.url || DEFAULT_IMAGES.hero}
                 alt="Fitness Training"
                 fill
                 className="object-cover opacity-75"
@@ -367,7 +368,7 @@ export default function Home() {
 
             <div className="relative aspect-[4/3] lg:aspect-square rounded-2xl overflow-hidden shadow-2xl">
               <Image
-                src="https://ext.same-assets.com/443545936/230438858.webp"
+                src={DEFAULT_IMAGES.trialTraining}
                 alt="Trial Training"
                 fill
                 className="object-cover"
@@ -384,7 +385,7 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-12 lg:gap-16 items-start">
             <div className="relative aspect-[4/3] lg:sticky lg:top-24 rounded-2xl overflow-hidden shadow-xl">
               <Image
-                src="https://ext.same-assets.com/443545936/2484507683.webp"
+                src={DEFAULT_IMAGES.about}
                 alt="About ProFitness Health Club"
                 fill
                 className="object-cover"
@@ -462,7 +463,7 @@ export default function Home() {
                     {trainer.instagramUrl && (
                       <a href={trainer.instagramUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
                         <Image
-                          src="https://ext.same-assets.com/443545936/2173459103.svg"
+                          src={DEFAULT_IMAGES.instagram}
                           alt="Instagram"
                           width={20}
                           height={20}
@@ -472,7 +473,7 @@ export default function Home() {
                     {trainer.facebookUrl && (
                       <a href={trainer.facebookUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
                         <Image
-                          src="https://ext.same-assets.com/443545936/3615542385.svg"
+                          src={DEFAULT_IMAGES.facebook}
                           alt="Facebook"
                           width={20}
                           height={20}
@@ -516,12 +517,12 @@ export default function Home() {
               >
                 {/* All 6 Images in a Single Row - Panoramic Style */}
                 {[
-                  'https://ext.same-assets.com/443545936/1729744263.webp',
-                  'https://ext.same-assets.com/443545936/691732246.webp',
-                  'https://ext.same-assets.com/443545936/1129713061.webp',
-                  'https://ext.same-assets.com/443545936/1537262654.webp',
-                  'https://ext.same-assets.com/443545936/1553179705.webp',
-                  'https://ext.same-assets.com/443545936/1443978950.webp'
+                  DEFAULT_IMAGES.classes.muayThai,
+                  DEFAULT_IMAGES.classes.fitness,
+                  DEFAULT_IMAGES.classes.mma,
+                  DEFAULT_IMAGES.classes.bjj,
+                  DEFAULT_IMAGES.classes.boxing,
+                  DEFAULT_IMAGES.classes.recovery
                 ].map((imageUrl, index) => (
                   <div 
                     key={index} 
@@ -611,7 +612,7 @@ export default function Home() {
                   {event.date && (
                     <p className="text-sm text-gray-600 mb-3 flex items-center gap-2">
                       <Image
-                        src="https://ext.same-assets.com/443545936/1099951661.svg"
+                        src={DEFAULT_IMAGES.calendar}
                         alt=""
                         width={16}
                         height={16}
@@ -684,7 +685,7 @@ export default function Home() {
 
             <div className="relative aspect-video lg:aspect-square rounded-2xl overflow-hidden shadow-2xl">
               <Image
-                src="https://ext.same-assets.com/443545936/2894262091.webp"
+                src={DEFAULT_IMAGES.location}
                 alt="Location Map"
                 fill
                 className="object-cover"

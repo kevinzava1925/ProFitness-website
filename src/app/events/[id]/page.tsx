@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Navigation from "../../components/Navigation";
 import Footer from "../../components/Footer";
+import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type EventItem = {
   id: string;
@@ -59,9 +60,9 @@ export default function EventDetailPage() {
 
       // Fallback to default events if not found
       const defaultEvents = [
-        { id: '1', name: 'Fitness Workshop', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'Every Saturday', description: 'Join our weekly fitness workshop to learn new techniques and improve your form.' },
-        { id: '2', name: 'Member Appreciation Day', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: 'First Sunday of Each Month', description: 'Special events and activities to celebrate our amazing members.' },
-        { id: '3', name: 'Nutrition Seminar', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: 'Monthly', description: 'Learn about proper nutrition and meal planning for your fitness goals.' }
+        { id: '1', name: 'Fitness Workshop', image: DEFAULT_IMAGES.events.event1, date: 'Every Saturday', description: 'Join our weekly fitness workshop to learn new techniques and improve your form.' },
+        { id: '2', name: 'Member Appreciation Day', image: DEFAULT_IMAGES.events.event2, date: 'First Sunday of Each Month', description: 'Special events and activities to celebrate our amazing members.' },
+        { id: '3', name: 'Nutrition Seminar', image: DEFAULT_IMAGES.events.event3, date: 'Monthly', description: 'Learn about proper nutrition and meal planning for your fitness goals.' }
       ];
       const fallbackEvent = defaultEvents.find(e => e.id === eventId);
       if (fallbackEvent) {
@@ -125,7 +126,7 @@ export default function EventDetailPage() {
               {event.date && (
                 <p className="text-white text-lg sm:text-xl md:text-2xl flex items-center justify-center gap-3">
                   <Image
-                    src="https://ext.same-assets.com/443545936/1099951661.svg"
+                    src={DEFAULT_IMAGES.calendar}
                     alt=""
                     width={24}
                     height={24}
@@ -163,7 +164,7 @@ export default function EventDetailPage() {
                   <div className="flex items-start">
                     <div className="flex-shrink-0 w-6 h-6 mr-3 mt-1">
                       <Image
-                        src="https://ext.same-assets.com/443545936/1099951661.svg"
+                        src={DEFAULT_IMAGES.calendar}
                         alt=""
                         width={24}
                         height={24}

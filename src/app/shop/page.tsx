@@ -4,6 +4,7 @@ import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type ShopItem = {
   id: string;
@@ -41,10 +42,10 @@ export default function ShopPage() {
         setShopItems(JSON.parse(loadedShop));
       } else {
         const defaultShop = [
-          { id: '1', name: 'T-Shirt', image: 'https://ext.same-assets.com/443545936/2710426474.webp', price: '$29.99' },
-          { id: '2', name: 'Hoodie', image: 'https://ext.same-assets.com/443545936/480816838.webp', price: '$59.99' },
-          { id: '3', name: 'Cap', image: 'https://ext.same-assets.com/443545936/1859491465.webp', price: '$24.99' },
-          { id: '4', name: 'Duffle Bag', image: 'https://ext.same-assets.com/443545936/3860077197.webp', price: '$39.99' }
+          { id: '1', name: 'T-Shirt', image: DEFAULT_IMAGES.shop.tshirt, price: '$29.99' },
+          { id: '2', name: 'Hoodie', image: DEFAULT_IMAGES.shop.hoodie, price: '$59.99' },
+          { id: '3', name: 'Cap', image: DEFAULT_IMAGES.shop.cap, price: '$24.99' },
+          { id: '4', name: 'Duffle Bag', image: DEFAULT_IMAGES.shop.duffle, price: '$39.99' }
         ];
         setShopItems(defaultShop);
       }
