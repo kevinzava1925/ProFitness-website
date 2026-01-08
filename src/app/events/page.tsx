@@ -18,17 +18,40 @@ export default function EventsPage() {
   const [events, setEvents] = useState<EventItem[]>([]);
 
   useEffect(() => {
-    const loadedEvents = localStorage.getItem("events");
-    if (loadedEvents) {
-      setEvents(JSON.parse(loadedEvents));
-    } else {
-      const defaultEvents = [
-        { id: '1', name: 'Fitness Workshop', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'Every Saturday', description: 'Join our weekly fitness workshop to learn new techniques and improve your form.' },
-        { id: '2', name: 'Member Appreciation Day', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: 'First Sunday of Each Month', description: 'Special events and activities to celebrate our amazing members.' },
-        { id: '3', name: 'Nutrition Seminar', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: 'Monthly', description: 'Learn about proper nutrition and meal planning for your fitness goals.' }
-      ];
-      setEvents(defaultEvents);
-    }
+    const loadEvents = async () => {
+      try {
+        // Always try to load from API first (Supabase) - add cache busting to ensure fresh data
+        const response = await fetch('/api/content?type=events&' + new Date().getTime());
+        if (response.ok) {
+          const apiEvents = await response.json();
+          
+          // Set events from API if available
+          if (Array.isArray(apiEvents) && apiEvents.length > 0) {
+            setEvents(apiEvents);
+            return; // Successfully loaded from API
+          }
+        } else {
+          console.error('API response not OK:', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('Error loading from API:', error);
+      }
+
+      // Fallback to localStorage if API fails
+      const loadedEvents = localStorage.getItem("events");
+      if (loadedEvents) {
+        setEvents(JSON.parse(loadedEvents));
+      } else {
+        const defaultEvents = [
+          { id: '1', name: 'Fitness Workshop', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'Every Saturday', description: 'Join our weekly fitness workshop to learn new techniques and improve your form.' },
+          { id: '2', name: 'Member Appreciation Day', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: 'First Sunday of Each Month', description: 'Special events and activities to celebrate our amazing members.' },
+          { id: '3', name: 'Nutrition Seminar', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: 'Monthly', description: 'Learn about proper nutrition and meal planning for your fitness goals.' }
+        ];
+        setEvents(defaultEvents);
+      }
+    };
+
+    loadEvents();
   }, []);
 
   return (

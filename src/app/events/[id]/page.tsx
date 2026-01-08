@@ -22,26 +22,42 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadedEvents = localStorage.getItem("events");
-    if (loadedEvents) {
-      const events = JSON.parse(loadedEvents);
-      const foundEvent = events.find((e: EventItem) => e.id === eventId);
-      if (foundEvent) {
-        setEvent(foundEvent);
-      } else {
-        // Fallback to default events if not found
-        const defaultEvents = [
-          { id: '1', name: 'Fitness Workshop', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'Every Saturday', description: 'Join our weekly fitness workshop to learn new techniques and improve your form.' },
-          { id: '2', name: 'Member Appreciation Day', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: 'First Sunday of Each Month', description: 'Special events and activities to celebrate our amazing members.' },
-          { id: '3', name: 'Nutrition Seminar', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: 'Monthly', description: 'Learn about proper nutrition and meal planning for your fitness goals.' }
-        ];
-        const fallbackEvent = defaultEvents.find(e => e.id === eventId);
-        if (fallbackEvent) {
-          setEvent(fallbackEvent);
+    const loadEvent = async () => {
+      try {
+        // Always try to load from API first (Supabase) - add cache busting to ensure fresh data
+        const response = await fetch('/api/content?type=events&' + new Date().getTime());
+        if (response.ok) {
+          const apiEvents = await response.json();
+          
+          // Find the event by ID
+          if (Array.isArray(apiEvents) && apiEvents.length > 0) {
+            const foundEvent = apiEvents.find((e: EventItem) => e.id === eventId);
+            if (foundEvent) {
+              setEvent(foundEvent);
+              setLoading(false);
+              return; // Successfully loaded from API
+            }
+          }
+        } else {
+          console.error('API response not OK:', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('Error loading from API:', error);
+      }
+
+      // Fallback to localStorage if API fails
+      const loadedEvents = localStorage.getItem("events");
+      if (loadedEvents) {
+        const events = JSON.parse(loadedEvents);
+        const foundEvent = events.find((e: EventItem) => e.id === eventId);
+        if (foundEvent) {
+          setEvent(foundEvent);
+          setLoading(false);
+          return;
         }
       }
-    } else {
-      // Use default events
+
+      // Fallback to default events if not found
       const defaultEvents = [
         { id: '1', name: 'Fitness Workshop', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'Every Saturday', description: 'Join our weekly fitness workshop to learn new techniques and improve your form.' },
         { id: '2', name: 'Member Appreciation Day', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: 'First Sunday of Each Month', description: 'Special events and activities to celebrate our amazing members.' },
@@ -51,8 +67,10 @@ export default function EventDetailPage() {
       if (fallbackEvent) {
         setEvent(fallbackEvent);
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    loadEvent();
   }, [eventId]);
 
   if (loading) {

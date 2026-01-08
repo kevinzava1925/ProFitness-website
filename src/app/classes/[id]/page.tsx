@@ -25,29 +25,42 @@ export default function ClassDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadedClasses = localStorage.getItem("classes");
-    if (loadedClasses) {
-      const classes = JSON.parse(loadedClasses);
-      const foundClass = classes.find((c: ClassItem) => c.id === classId);
-      if (foundClass) {
-        setClassItem(foundClass);
-      } else {
-        // Fallback to default classes if not found
-        const defaultClasses = [
-          { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
-          { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
-          { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
-          { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
-          { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
-          { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
-        ];
-        const fallbackClass = defaultClasses.find(c => c.id === classId);
-        if (fallbackClass) {
-          setClassItem(fallbackClass);
+    const loadClass = async () => {
+      try {
+        // Always try to load from API first (Supabase) - add cache busting to ensure fresh data
+        const response = await fetch('/api/content?type=classes&' + new Date().getTime());
+        if (response.ok) {
+          const apiClasses = await response.json();
+          
+          // Find the class by ID
+          if (Array.isArray(apiClasses) && apiClasses.length > 0) {
+            const foundClass = apiClasses.find((c: ClassItem) => c.id === classId);
+            if (foundClass) {
+              setClassItem(foundClass);
+              setLoading(false);
+              return; // Successfully loaded from API
+            }
+          }
+        } else {
+          console.error('API response not OK:', response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error('Error loading from API:', error);
+      }
+
+      // Fallback to localStorage if API fails
+      const loadedClasses = localStorage.getItem("classes");
+      if (loadedClasses) {
+        const classes = JSON.parse(loadedClasses);
+        const foundClass = classes.find((c: ClassItem) => c.id === classId);
+        if (foundClass) {
+          setClassItem(foundClass);
+          setLoading(false);
+          return;
         }
       }
-    } else {
-      // Use default classes
+
+      // Fallback to default classes if not found
       const defaultClasses = [
         { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
         { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
@@ -60,8 +73,10 @@ export default function ClassDetailPage() {
       if (fallbackClass) {
         setClassItem(fallbackClass);
       }
-    }
-    setLoading(false);
+      setLoading(false);
+    };
+
+    loadClass();
   }, [classId]);
 
   if (loading) {
