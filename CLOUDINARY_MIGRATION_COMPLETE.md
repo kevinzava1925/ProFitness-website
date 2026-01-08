@@ -94,3 +94,5 @@ These limits are much higher than Supabase Storage, which should solve your larg
 
 **Status**: ✅ Migration complete! Add Cloudinary variables in Netlify and redeploy.
 
+
+

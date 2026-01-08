@@ -67,9 +67,26 @@ type HeroMedia = {
   type: 'image' | 'video';
 };
 
+type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  subject: string;
+  message: string;
+  created_at: string;
+};
+
+type ContactRecipient = {
+  id: string;
+  email: string;
+  is_active: boolean;
+  created_at: string;
+};
+
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'homepage' | 'classes' | 'events' | 'shop' | 'partners' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities'>('homepage');
+  const [activeTab, setActiveTab] = useState<'homepage' | 'classes' | 'events' | 'shop' | 'partners' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities' | 'messages'>('homepage');
   const [classes, setClasses] = useState<ContentItem[]>([]);
   const [events, setEvents] = useState<ContentItem[]>([]);
   const [shopItems, setShopItems] = useState<ContentItem[]>([]);
@@ -88,6 +105,10 @@ export default function AdminDashboard() {
   const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadField, setUploadField] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [recipients, setRecipients] = useState<ContactRecipient[]>([]);
+  const [newRecipientEmail, setNewRecipientEmail] = useState('');
+  const [isAddingRecipient, setIsAddingRecipient] = useState(false);
 
   // Image upload function - Upload to Cloudinary
   const handleImageUpload = async (file: File, fieldName: string) => {
@@ -166,34 +187,34 @@ export default function AdminDashboard() {
         imageUrl = cloudinaryData.secure_url || cloudinaryData.url;
       } else {
         // Use API route for smaller files (faster)
-        const formData = new FormData();
-        formData.append('file', file);
+      const formData = new FormData();
+      formData.append('file', file);
 
         const response = await fetch('/api/upload-direct', {
-          method: 'POST',
-          body: formData,
-        });
+        method: 'POST',
+        body: formData,
+      });
 
-        // Read response once
-        const responseText = await response.text();
-        
-        if (!response.ok) {
-          let errorMessage = `Upload failed with status ${response.status}`;
-          try {
-            const errorData = JSON.parse(responseText);
-            errorMessage = errorData.error || errorData.message || errorMessage;
-          } catch (parseError) {
-            errorMessage = responseText || errorMessage;
-          }
+      // Read response once
+      const responseText = await response.text();
+      
+      if (!response.ok) {
+        let errorMessage = `Upload failed with status ${response.status}`;
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = responseText || errorMessage;
+        }
           console.error('Cloudinary upload error:', { 
             status: response.status, 
             message: errorMessage,
             responseText 
           });
-          throw new Error(errorMessage);
-        }
+        throw new Error(errorMessage);
+      }
 
-        // Parse the successful response
+      // Parse the successful response
         let data;
         try {
           data = JSON.parse(responseText);
@@ -201,12 +222,12 @@ export default function AdminDashboard() {
           console.error('Failed to parse upload response:', responseText);
           throw new Error('Invalid response from server');
         }
-        
-        if (!data.url && !data.secure_url) {
+      
+      if (!data.url && !data.secure_url) {
           console.error('Upload response missing URL:', data);
           throw new Error('No URL returned from Cloudinary');
-        }
-        
+      }
+      
         imageUrl = data.url || data.secure_url;
       }
       
@@ -302,34 +323,34 @@ export default function AdminDashboard() {
         mediaUrl = cloudinaryData.secure_url || cloudinaryData.url;
       } else {
         // Use API route for smaller files (faster)
-        const formData = new FormData();
-        formData.append('file', file);
+      const formData = new FormData();
+      formData.append('file', file);
 
         const response = await fetch('/api/upload-direct', {
-          method: 'POST',
-          body: formData,
-        });
+        method: 'POST',
+        body: formData,
+      });
 
-        // Read response once
-        const responseText = await response.text();
-        
-        if (!response.ok) {
-          let errorMessage = `Upload failed with status ${response.status}`;
-          try {
-            const errorData = JSON.parse(responseText);
-            errorMessage = errorData.error || errorData.message || errorMessage;
-          } catch (parseError) {
-            errorMessage = responseText || errorMessage;
-          }
+      // Read response once
+      const responseText = await response.text();
+      
+      if (!response.ok) {
+        let errorMessage = `Upload failed with status ${response.status}`;
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = responseText || errorMessage;
+        }
           console.error('Cloudinary upload error:', { 
             status: response.status, 
             message: errorMessage,
             responseText 
           });
-          throw new Error(errorMessage);
-        }
+        throw new Error(errorMessage);
+      }
 
-        // Parse the successful response
+      // Parse the successful response
         let data;
         try {
           data = JSON.parse(responseText);
@@ -337,12 +358,12 @@ export default function AdminDashboard() {
           console.error('Failed to parse upload response:', responseText);
           throw new Error('Invalid response from server');
         }
-        
-        if (!data.url && !data.secure_url) {
+      
+      if (!data.url && !data.secure_url) {
           console.error('Upload response missing URL:', data);
           throw new Error('No URL returned from Cloudinary');
-        }
-        
+      }
+      
         mediaUrl = data.url || data.secure_url;
         resourceType = data.type || (isVideo ? 'video' : 'image');
       }
@@ -602,6 +623,127 @@ export default function AdminDashboard() {
 
     loadContent();
   }, []);
+
+  // Load messages and recipients when messages tab is active
+  useEffect(() => {
+    if (activeTab === 'messages') {
+      loadMessages();
+      loadRecipients();
+    }
+  }, [activeTab]);
+
+  // Load messages
+  const loadMessages = async () => {
+    try {
+      const response = await fetch('/api/contact/messages');
+      if (response.ok) {
+        const data = await response.json();
+        setMessages(data.messages || []);
+      }
+    } catch (error) {
+      console.error('Error loading messages:', error);
+    }
+  };
+
+  // Load recipients
+  const loadRecipients = async () => {
+    try {
+      const response = await fetch('/api/contact/recipients');
+      if (response.ok) {
+        const data = await response.json();
+        setRecipients(data.recipients || []);
+      }
+    } catch (error) {
+      console.error('Error loading recipients:', error);
+    }
+  };
+
+  // Add recipient
+  const handleAddRecipient = async () => {
+    if (!newRecipientEmail || !newRecipientEmail.includes('@')) {
+      alert('Please enter a valid email address');
+      return;
+    }
+
+    setIsAddingRecipient(true);
+    try {
+      const response = await fetch('/api/contact/recipients', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: newRecipientEmail }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setNewRecipientEmail('');
+        await loadRecipients();
+        alert('Recipient added successfully!');
+      } else {
+        alert(data.error || 'Failed to add recipient');
+      }
+    } catch (error) {
+      alert('Failed to add recipient');
+    } finally {
+      setIsAddingRecipient(false);
+    }
+  };
+
+  // Delete recipient
+  const handleDeleteRecipient = async (id: string) => {
+    if (!confirm('Are you sure you want to remove this recipient?')) return;
+
+    try {
+      const response = await fetch(`/api/contact/recipients?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await loadRecipients();
+        alert('Recipient removed successfully!');
+      } else {
+        alert('Failed to remove recipient');
+      }
+    } catch (error) {
+      alert('Failed to remove recipient');
+    }
+  };
+
+  // Toggle recipient active status
+  const handleToggleRecipient = async (id: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch('/api/contact/recipients', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, is_active: !currentStatus }),
+      });
+
+      if (response.ok) {
+        await loadRecipients();
+      }
+    } catch (error) {
+      console.error('Error toggling recipient:', error);
+    }
+  };
+
+  // Delete message
+  const handleDeleteMessage = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this message?')) return;
+
+    try {
+      const response = await fetch(`/api/contact/messages?id=${id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        await loadMessages();
+        alert('Message deleted successfully!');
+      } else {
+        alert('Failed to delete message');
+      }
+    } catch (error) {
+      alert('Failed to delete message');
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("adminAuth");
@@ -958,7 +1100,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="border-b border-gray-200">
             <nav className="flex -mb-px overflow-x-auto">
-              {(['homepage', 'classes', 'events', 'shop', 'partners', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities'] as const).map((tab) => (
+              {(['homepage', 'classes', 'events', 'shop', 'partners', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities', 'messages'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -1314,6 +1456,137 @@ export default function AdminDashboard() {
                 ))}
               </div>
             </>
+          )}
+
+          {activeTab === 'messages' && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">Contact Messages</h2>
+                <button
+                  onClick={() => { loadMessages(); loadRecipients(); }}
+                  className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
+                >
+                  Refresh
+                </button>
+              </div>
+
+              {/* Recipient Email Management */}
+              <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+                <h3 className="text-xl font-bold mb-4">Email Recipients</h3>
+                <p className="text-sm text-gray-600 mb-4">Add email addresses that will receive contact form submissions.</p>
+                <div className="flex gap-2 mb-4">
+                  <input
+                    type="email"
+                    value={newRecipientEmail}
+                    onChange={(e) => setNewRecipientEmail(e.target.value)}
+                    placeholder="Add recipient email"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddRecipient();
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={handleAddRecipient}
+                    disabled={isAddingRecipient}
+                    className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 disabled:opacity-50"
+                  >
+                    {isAddingRecipient ? 'Adding...' : 'Add'}
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {recipients.map((recipient) => (
+                    <div key={recipient.id} className="flex items-center justify-between p-3 bg-white rounded border border-gray-200">
+                      <div className="flex items-center gap-3">
+                        <span className={recipient.is_active ? 'text-gray-900 font-medium' : 'text-gray-400'}>
+                          {recipient.email}
+                        </span>
+                        <span className={`text-xs px-2 py-1 rounded ${recipient.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
+                          {recipient.is_active ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleToggleRecipient(recipient.id, recipient.is_active)}
+                          className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
+                        >
+                          {recipient.is_active ? 'Deactivate' : 'Activate'}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteRecipient(recipient.id)}
+                          className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {recipients.length === 0 && (
+                    <p className="text-gray-500 text-sm p-3 bg-white rounded border border-gray-200">No recipients added. Add emails to receive contact form messages.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Messages List */}
+              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-100">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Date</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Name</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Email</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Phone</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Subject</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Message</th>
+                        <th className="px-4 py-3 text-left text-sm font-semibold">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {messages.map((msg) => (
+                        <tr key={msg.id} className="border-t hover:bg-gray-50">
+                          <td className="px-4 py-3 text-sm">
+                            {new Date(msg.created_at).toLocaleDateString()}
+                            <br />
+                            <span className="text-xs text-gray-500">
+                              {new Date(msg.created_at).toLocaleTimeString()}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm font-medium">{msg.name}</td>
+                          <td className="px-4 py-3 text-sm">
+                            <a href={`mailto:${msg.email}`} className="text-blue-600 hover:underline">
+                              {msg.email}
+                            </a>
+                          </td>
+                          <td className="px-4 py-3 text-sm">{msg.phone || '-'}</td>
+                          <td className="px-4 py-3 text-sm">{msg.subject}</td>
+                          <td className="px-4 py-3 text-sm max-w-xs">
+                            <div className="truncate" title={msg.message}>
+                              {msg.message}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            <button
+                              onClick={() => handleDeleteMessage(msg.id)}
+                              className="text-red-600 hover:text-red-800"
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {messages.length === 0 && (
+                    <div className="p-8 text-center text-gray-500">
+                      No messages yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
