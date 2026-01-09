@@ -76,26 +76,15 @@ export default function Home() {
             setAmenities(allContent.amenities);
           }
           // Hero is a single object, not an array
-          // Check if DEFAULT_IMAGES.hero is a real URL (not a placeholder)
-          const isDefaultHeroReal = DEFAULT_IMAGES.hero && !DEFAULT_IMAGES.hero.includes('YOUR_CLOUD_NAME');
-          
-          // Check if Supabase has valid hero data
-          const hasSupabaseHero = allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url && allContent.hero.url.trim() !== '';
-          
-          // Prioritize DEFAULT_IMAGES.hero if it's been updated with a real URL
-          // This allows config file updates to override Supabase data
-          if (isDefaultHeroReal) {
-            setHeroMedia({
-              url: DEFAULT_IMAGES.hero,
-              type: "image"
-            });
-          } else if (hasSupabaseHero) {
-            // Use Supabase data if default is still a placeholder
+          // ALWAYS prioritize Supabase data (from admin dashboard) over defaults
+          // Only use DEFAULT_IMAGES.hero as fallback when Supabase has no data
+          if (allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url && allContent.hero.url.trim() !== '') {
+            // Use Supabase data (admin dashboard updates take priority)
             setHeroMedia(allContent.hero);
           } else {
-            // Fallback to default (even if placeholder)
+            // Only use default if Supabase has no hero data
             setHeroMedia({
-              url: DEFAULT_IMAGES.hero,
+              url: DEFAULT_IMAGES.hero || '',
               type: "image"
             });
           }

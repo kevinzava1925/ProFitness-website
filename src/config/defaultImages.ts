@@ -71,9 +71,9 @@ export const DEFAULT_IMAGES = {
   },
   
   // Hero & Other Images
-  hero: 'https://res.cloudinary.com/dvdogsvf6/image/upload/v1767933504/DSCF9778-31_erf0xa.jpg',
+  hero: '',
   trialTraining: 'https://res.cloudinary.com/dvdogsvf6/image/upload/v1767933494/Copy_of_Pro_Fitness_2.0_launch-8084_prymvi.jpg',
-  about: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/about.jpg',
+  about: 'https://res.cloudinary.com/dvdogsvf6/image/upload/v1767933504/DSCF9778-31_erf0xa.jpg',
   location: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/location.jpg',
   
   // Icons (keep existing if they work, or replace with Cloudinary)
