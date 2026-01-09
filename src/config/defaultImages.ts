@@ -12,6 +12,16 @@ export const DEFAULT_IMAGES = {
     recovery: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/recovery.jpg',
   },
   
+  // Carousel Images (6 images for Training Image carousel on homepage)
+  carousel: {
+    image1: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/carousel-1.jpg',
+    image2: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/carousel-2.jpg',
+    image3: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/carousel-3.jpg',
+    image4: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/carousel-4.jpg',
+    image5: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/carousel-5.jpg',
+    image6: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/carousel-6.jpg',
+  },
+  
   // Events
   events: {
     event1: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/event1.jpg',
@@ -61,8 +71,8 @@ export const DEFAULT_IMAGES = {
   },
   
   // Hero & Other Images
-  hero: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/hero.jpg',
-  trialTraining: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/trial-training.jpg',
+  hero: 'https://res.cloudinary.com/dvdogsvf6/image/upload/v1767933504/DSCF9778-31_erf0xa.jpg',
+  trialTraining: 'https://res.cloudinary.com/dvdogsvf6/image/upload/v1767933494/Copy_of_Pro_Fitness_2.0_launch-8084_prymvi.jpg',
   about: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/about.jpg',
   location: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/location.jpg',
   

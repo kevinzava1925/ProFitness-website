@@ -624,11 +624,11 @@ export default function AdminDashboard() {
       } else {
         // Only set default hero if not already set from API
         if (!heroMedia) {
-          const defaultHero: HeroMedia = {
+        const defaultHero: HeroMedia = {
             url: DEFAULT_IMAGES.hero,
-            type: "image"
-          };
-          setHeroMedia(defaultHero);
+          type: "image"
+        };
+        setHeroMedia(defaultHero);
         }
       }
     };

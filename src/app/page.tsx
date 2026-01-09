@@ -75,11 +75,25 @@ export default function Home() {
           if (allContent.amenities && Array.isArray(allContent.amenities) && allContent.amenities.length > 0) {
             setAmenities(allContent.amenities);
           }
-          // Hero is a single object, not an array - ALWAYS use API data if available
-          if (allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url) {
+          // Hero is a single object, not an array
+          // Check if DEFAULT_IMAGES.hero is a real URL (not a placeholder)
+          const isDefaultHeroReal = DEFAULT_IMAGES.hero && !DEFAULT_IMAGES.hero.includes('YOUR_CLOUD_NAME');
+          
+          // Check if Supabase has valid hero data
+          const hasSupabaseHero = allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url && allContent.hero.url.trim() !== '';
+          
+          // Prioritize DEFAULT_IMAGES.hero if it's been updated with a real URL
+          // This allows config file updates to override Supabase data
+          if (isDefaultHeroReal) {
+            setHeroMedia({
+              url: DEFAULT_IMAGES.hero,
+              type: "image"
+            });
+          } else if (hasSupabaseHero) {
+            // Use Supabase data if default is still a placeholder
             setHeroMedia(allContent.hero);
           } else {
-            // Only use default if API doesn't have hero data
+            // Fallback to default (even if placeholder)
             setHeroMedia({
               url: DEFAULT_IMAGES.hero,
               type: "image"
@@ -102,7 +116,7 @@ export default function Home() {
           return; // Successfully loaded from API
         } else {
           console.error('API response not OK:', response.status, response.statusText);
-          // If API fails, use defaults (not localStorage)
+          // If API fails, use DEFAULT_IMAGES.hero
           setHeroMedia({
             url: DEFAULT_IMAGES.hero,
             type: "image"
@@ -110,7 +124,7 @@ export default function Home() {
         }
       } catch (error) {
         console.error('Error loading from API:', error);
-        // If API fails, use defaults (not localStorage)
+        // If API fails, use DEFAULT_IMAGES.hero
         setHeroMedia({
           url: DEFAULT_IMAGES.hero,
           type: "image"
@@ -372,6 +386,10 @@ export default function Home() {
                 alt="Trial Training"
                 fill
                 className="object-cover"
+                priority
+                onError={(e) => {
+                  console.error('Trial training image failed to load:', DEFAULT_IMAGES.trialTraining);
+                }}
               />
               <div className="absolute inset-0 bg-gradient-to-br from-profitness-brown/20 to-transparent" />
             </div>
@@ -517,12 +535,12 @@ export default function Home() {
               >
                 {/* All 6 Images in a Single Row - Panoramic Style */}
                 {[
-                  DEFAULT_IMAGES.classes.muayThai,
-                  DEFAULT_IMAGES.classes.fitness,
-                  DEFAULT_IMAGES.classes.mma,
-                  DEFAULT_IMAGES.classes.bjj,
-                  DEFAULT_IMAGES.classes.boxing,
-                  DEFAULT_IMAGES.classes.recovery
+                  DEFAULT_IMAGES.carousel.image1,
+                  DEFAULT_IMAGES.carousel.image2,
+                  DEFAULT_IMAGES.carousel.image3,
+                  DEFAULT_IMAGES.carousel.image4,
+                  DEFAULT_IMAGES.carousel.image5,
+                  DEFAULT_IMAGES.carousel.image6
                 ].map((imageUrl, index) => (
                   <div 
                     key={index} 
