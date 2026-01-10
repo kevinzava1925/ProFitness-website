@@ -19,29 +19,47 @@ export default function ClassesSchedulePage() {
   const [selectedDay, setSelectedDay] = useState<string>('all');
 
   useEffect(() => {
-    // Load schedule from localStorage or use default
-    const loadedSchedule = localStorage.getItem("classSchedule");
-    if (loadedSchedule) {
-      setSchedule(JSON.parse(loadedSchedule));
-    } else {
-      const defaultSchedule: ClassSchedule[] = [
-        { id: '1', name: 'Morning Yoga', instructor: 'Sarah Johnson', time: '07:00', day: 'Monday', duration: '60 min', level: 'All Levels' },
-        { id: '2', name: 'HIIT Training', instructor: 'Mike Chen', time: '08:00', day: 'Monday', duration: '45 min', level: 'Intermediate' },
-        { id: '3', name: 'Strength Training', instructor: 'David Martinez', time: '18:00', day: 'Monday', duration: '60 min', level: 'All Levels' },
-        { id: '4', name: 'Cardio Blast', instructor: 'Emma Wilson', time: '07:00', day: 'Tuesday', duration: '45 min', level: 'Beginner' },
-        { id: '5', name: 'Pilates', instructor: 'Sarah Johnson', time: '19:00', day: 'Tuesday', duration: '50 min', level: 'All Levels' },
-        { id: '6', name: 'CrossFit', instructor: 'Mike Chen', time: '06:00', day: 'Wednesday', duration: '60 min', level: 'Advanced' },
-        { id: '7', name: 'Yoga Flow', instructor: 'Sarah Johnson', time: '18:30', day: 'Wednesday', duration: '60 min', level: 'All Levels' },
-        { id: '8', name: 'Spin Class', instructor: 'Emma Wilson', time: '07:30', day: 'Thursday', duration: '45 min', level: 'Intermediate' },
-        { id: '9', name: 'Bootcamp', instructor: 'David Martinez', time: '19:00', day: 'Thursday', duration: '60 min', level: 'All Levels' },
-        { id: '10', name: 'Stretch & Recovery', instructor: 'Sarah Johnson', time: '09:00', day: 'Friday', duration: '45 min', level: 'All Levels' },
-        { id: '11', name: 'Boxing', instructor: 'Mike Chen', time: '18:00', day: 'Friday', duration: '60 min', level: 'Intermediate' },
-        { id: '12', name: 'Weekend Warrior', instructor: 'David Martinez', time: '10:00', day: 'Saturday', duration: '90 min', level: 'All Levels' },
-        { id: '13', name: 'Yoga & Meditation', instructor: 'Sarah Johnson', time: '11:00', day: 'Sunday', duration: '75 min', level: 'All Levels' },
-      ];
-      setSchedule(defaultSchedule);
-      localStorage.setItem("classSchedule", JSON.stringify(defaultSchedule));
-    }
+    const loadSchedule = async () => {
+      try {
+        // Try to load from API first
+        const response = await fetch('/api/content?type=schedule');
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setSchedule(data);
+            return;
+          }
+        }
+      } catch (error) {
+        console.error('Error loading schedule from API:', error);
+      }
+
+      // Fallback to localStorage if API fails
+      const loadedSchedule = localStorage.getItem("classSchedule");
+      if (loadedSchedule) {
+        setSchedule(JSON.parse(loadedSchedule));
+      } else {
+        // Only use default if both API and localStorage fail
+        const defaultSchedule: ClassSchedule[] = [
+          { id: '1', name: 'Morning Yoga', instructor: 'Sarah Johnson', time: '07:00', day: 'Monday', duration: '60 min', level: 'All Levels' },
+          { id: '2', name: 'HIIT Training', instructor: 'Mike Chen', time: '08:00', day: 'Monday', duration: '45 min', level: 'Intermediate' },
+          { id: '3', name: 'Strength Training', instructor: 'David Martinez', time: '18:00', day: 'Monday', duration: '60 min', level: 'All Levels' },
+          { id: '4', name: 'Cardio Blast', instructor: 'Emma Wilson', time: '07:00', day: 'Tuesday', duration: '45 min', level: 'Beginner' },
+          { id: '5', name: 'Pilates', instructor: 'Sarah Johnson', time: '19:00', day: 'Tuesday', duration: '50 min', level: 'All Levels' },
+          { id: '6', name: 'CrossFit', instructor: 'Mike Chen', time: '06:00', day: 'Wednesday', duration: '60 min', level: 'Advanced' },
+          { id: '7', name: 'Yoga Flow', instructor: 'Sarah Johnson', time: '18:30', day: 'Wednesday', duration: '60 min', level: 'All Levels' },
+          { id: '8', name: 'Spin Class', instructor: 'Emma Wilson', time: '07:30', day: 'Thursday', duration: '45 min', level: 'Intermediate' },
+          { id: '9', name: 'Bootcamp', instructor: 'David Martinez', time: '19:00', day: 'Thursday', duration: '60 min', level: 'All Levels' },
+          { id: '10', name: 'Stretch & Recovery', instructor: 'Sarah Johnson', time: '09:00', day: 'Friday', duration: '45 min', level: 'All Levels' },
+          { id: '11', name: 'Boxing', instructor: 'Mike Chen', time: '18:00', day: 'Friday', duration: '60 min', level: 'Intermediate' },
+          { id: '12', name: 'Weekend Warrior', instructor: 'David Martinez', time: '10:00', day: 'Saturday', duration: '90 min', level: 'All Levels' },
+          { id: '13', name: 'Yoga & Meditation', instructor: 'Sarah Johnson', time: '11:00', day: 'Sunday', duration: '75 min', level: 'All Levels' },
+        ];
+        setSchedule(defaultSchedule);
+      }
+    };
+
+    loadSchedule();
   }, []);
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];

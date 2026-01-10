@@ -46,6 +46,7 @@ export default function Home() {
   const [amenities, setAmenities] = useState<ContentItem[]>([]);
   const [trainerCarouselIndex, setTrainerCarouselIndex] = useState(0);
   const [heroMedia, setHeroMedia] = useState<HeroMedia | null>(null);
+  const [showAllClasses, setShowAllClasses] = useState(false);
 
   // Load content from API (Supabase) - no localStorage fallback for syncing
   useEffect(() => {
@@ -273,13 +274,13 @@ export default function Home() {
           <div className="max-w-3xl">
             <h1 className="text-white mb-6 sm:mb-8 animate-slide-up">
               <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black uppercase leading-tight sm:leading-none mb-1 sm:mb-2">
-                Transform.
+                Make
               </div>
               <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black uppercase leading-tight sm:leading-none mb-1 sm:mb-2">
-                Achieve.
+                IT
               </div>
               <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black uppercase leading-tight sm:leading-none">
-                Excel.
+                HAPPEN.
               </div>
             </h1>
 
@@ -310,7 +311,7 @@ export default function Home() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
-            {classes.map((classItem) => (
+            {(showAllClasses ? classes : classes.slice(0, 3)).map((classItem) => (
               <div key={classItem.id} className="group relative overflow-hidden bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer hover-lift border border-gray-200">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl">
                   <Image
@@ -341,7 +342,15 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="text-center mt-12 sm:mt-16">
+          <div className="text-center mt-12 sm:mt-16 flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center">
+            {classes.length > 3 && (
+              <button
+                onClick={() => setShowAllClasses(!showAllClasses)}
+                className="bg-profitness-brown text-white px-8 sm:px-12 py-4 sm:py-5 font-bold text-sm sm:text-base uppercase hover:bg-black transition-all duration-300 hover-lift rounded-lg shadow-lg"
+              >
+                {showAllClasses ? 'Show Less Classes' : 'View More Classes'}
+              </button>
+            )}
             <Link href="/classes">
               <button className="bg-black text-white px-8 sm:px-12 py-4 sm:py-5 font-bold text-sm sm:text-base uppercase hover:bg-profitness-brown transition-all duration-300 hover-lift rounded-lg shadow-lg">
                 View All Classes
@@ -361,11 +370,11 @@ export default function Home() {
               </h2>
 
               <div className="space-y-4 text-gray-300 leading-relaxed">
-                <p>You want to try out a free training session with us? No problem! Just come by during our regular opening hours and talk to our team at the desk.</p>
+                <p>You want to try out a session with us? No problem! Just come by during our regular opening hours and talk to our team at the desk.</p>
 
                 <p>There, we'll advise you, find a suitable date together, and give you a tour of the gym.</p>
 
-                <p>Please note that due to high demand, we can rarely offer same-day appointments. For additional useful information about your trial training, please visit our Helpcenter.</p>
+                <p>For additional useful information about your trial training, please visit our Helpcenter.</p>
               </div>
             </div>
 
@@ -406,9 +415,11 @@ export default function Home() {
               </h2>
 
               <div className="space-y-4 text-gray-700 leading-relaxed mb-8">
-                <p>We founded the gym in 2010 and have been based at Moritzplatz ever since. Originally starting as a pure MMA gym, over time, we have evolved into a hub for various martial arts with a focus on MMA, BJJ, and Muay Thai.</p>
+                <p>With over 10 years of experience in the fitness industry, we’ve built a reputation for excellence, dedication, and results. Our gym is open 7 days a week, giving you the flexibility to work out on your schedule. We take pride in offering state-of-the-art facilities, world-class trainers, and a wide variety of fitness classes held 6 days a week to help you stay motivated and challenged.</p>
 
-                <p>Seven days a week, our team and community ensure a vast array of activities through over 140 classes. Our fitness area and spacious mat areas provide opportunities for independent strength and technique training or sparring sessions with friends.</p>
+                <p>Whether you’re a beginner or a seasoned athlete, our team is here to support you every step of the way. At the heart of everything we do is our commitment to outstanding customer service — creating a welcoming, empowering environment for everyone who walks through our doors.
+
+Join us and experience the difference.</p>
               </div>
 
               <Link href="/about">
@@ -599,7 +610,7 @@ export default function Home() {
           </h2>
 
           <p className="text-center text-gray-700 text-base sm:text-lg mb-12 sm:mb-16 lg:mb-20 leading-relaxed px-2 sm:px-0">
-            Seminars with local and international fitness experts or tournaments in all areas are regularly featured in our program.
+          At Pro-Fitness Health Club, we believe fitness is more than just a routine—it’s a lifestyle. Explore our upcoming events designed to challenge, inspire, and bring our community together. Whether you’re here to crush a new goal, connect with fellow fitness enthusiasts, or simply have fun, there’s always something exciting happening. Check out what’s coming next and take your fitness journey to the next level! 💪🔥
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10 mb-12 sm:mb-16">
@@ -711,7 +722,7 @@ export default function Home() {
           </h2>
 
           <p className="text-center text-gray-700 text-base sm:text-lg max-w-4xl mx-auto mb-12 sm:mb-16 lg:mb-20 leading-relaxed px-2 sm:px-0">
-            Experience world-class facilities designed to support your fitness journey. From state-of-the-art equipment to premium amenities, we have everything you need.
+          At Pro-Fitness Health Club, we’re always expanding our amenities to meet the needs of our community. Something you’d like to see added to our list? Submit a request.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10 mb-12 sm:mb-16">

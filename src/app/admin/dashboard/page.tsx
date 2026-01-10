@@ -85,9 +85,19 @@ type ContactRecipient = {
   created_at: string;
 };
 
+type ClassSchedule = {
+  id: string;
+  name: string;
+  instructor: string;
+  time: string;
+  day: string;
+  duration: string;
+  level: string;
+};
+
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'homepage' | 'classes' | 'events' | 'shop' | 'partners' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities' | 'messages'>('homepage');
+  const [activeTab, setActiveTab] = useState<'homepage' | 'classes' | 'events' | 'shop' | 'partners' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities' | 'messages' | 'schedule'>('homepage');
   const [classes, setClasses] = useState<ContentItem[]>([]);
   const [events, setEvents] = useState<ContentItem[]>([]);
   const [shopItems, setShopItems] = useState<ContentItem[]>([]);
@@ -110,6 +120,8 @@ export default function AdminDashboard() {
   const [recipients, setRecipients] = useState<ContactRecipient[]>([]);
   const [newRecipientEmail, setNewRecipientEmail] = useState('');
   const [isAddingRecipient, setIsAddingRecipient] = useState(false);
+  const [schedule, setSchedule] = useState<ClassSchedule[]>([]);
+  const [editingSchedule, setEditingSchedule] = useState<ClassSchedule | null>(null);
 
   // Image upload function - Upload to Cloudinary
   const handleImageUpload = async (file: File, fieldName: string) => {
@@ -644,6 +656,13 @@ export default function AdminDashboard() {
     }
   }, [activeTab]);
 
+  // Load schedule when schedule tab is active
+  useEffect(() => {
+    if (activeTab === 'schedule') {
+      loadSchedule();
+    }
+  }, [activeTab]);
+
   // Load messages
   const loadMessages = async () => {
     try {
@@ -667,6 +686,30 @@ export default function AdminDashboard() {
       }
     } catch (error) {
       console.error('Error loading recipients:', error);
+    }
+  };
+
+  // Load schedule
+  const loadSchedule = async () => {
+    try {
+      const response = await fetch('/api/content?type=schedule');
+      if (response.ok) {
+        const data = await response.json();
+        setSchedule(Array.isArray(data) ? data : []);
+      } else {
+        // If API fails, try localStorage fallback
+        const loadedSchedule = localStorage.getItem("classSchedule");
+        if (loadedSchedule) {
+          setSchedule(JSON.parse(loadedSchedule));
+        }
+      }
+    } catch (error) {
+      console.error('Error loading schedule:', error);
+      // Fallback to localStorage
+      const loadedSchedule = localStorage.getItem("classSchedule");
+      if (loadedSchedule) {
+        setSchedule(JSON.parse(loadedSchedule));
+      }
     }
   };
 
@@ -776,6 +819,19 @@ export default function AdminDashboard() {
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
 
+    if (activeTab === 'schedule') {
+      try {
+        const newSchedule = schedule.filter(item => item.id !== id);
+        setSchedule(newSchedule);
+        await saveContentToAPI('schedule', newSchedule);
+        alert('Schedule item deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting schedule item:', error);
+        alert('Failed to delete schedule item. Please try again.');
+      }
+      return;
+    }
+
     const updateState = (items: ContentItem[]) => items.filter(item => item.id !== id);
 
     try {
@@ -812,12 +868,31 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleEdit = (item: ContentItem) => {
-    setEditingItem(item);
+  const handleEdit = (item: ContentItem | ClassSchedule) => {
+    if (activeTab === 'schedule') {
+      setEditingSchedule(item as ClassSchedule);
+      setIsEditing(true);
+      return;
+    }
+    setEditingItem(item as ContentItem);
     setIsEditing(true);
   };
 
   const handleAdd = () => {
+    if (activeTab === 'schedule') {
+      setEditingSchedule({
+        id: Date.now().toString(),
+        name: '',
+        instructor: '',
+        time: '',
+        day: 'Monday',
+        duration: '60 min',
+        level: 'All Levels'
+      });
+      setIsEditing(true);
+      return;
+    }
+
     setEditingItem({
       id: Date.now().toString(),
       name: '',
@@ -833,6 +908,29 @@ export default function AdminDashboard() {
   };
 
   const handleSave = async () => {
+    if (activeTab === 'schedule' && editingSchedule) {
+      try {
+        const updateSchedule = (items: ClassSchedule[]) => {
+          const exists = items.find(item => item.id === editingSchedule.id);
+          if (exists) {
+            return items.map(item => item.id === editingSchedule.id ? editingSchedule : item);
+          } else {
+            return [...items, editingSchedule];
+          }
+        };
+        const newSchedule = updateSchedule(schedule);
+        setSchedule(newSchedule);
+        await saveContentToAPI('schedule', newSchedule);
+        setIsEditing(false);
+        setEditingSchedule(null);
+        alert('Schedule item saved successfully!');
+      } catch (error) {
+        console.error('Error saving schedule item:', error);
+        alert('Failed to save schedule item. Please try again.');
+      }
+      return;
+    }
+
     if (!editingItem) return;
 
     const updateItems = (items: ContentItem[]) => {
@@ -1112,7 +1210,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="border-b border-gray-200">
             <nav className="flex -mb-px overflow-x-auto">
-              {(['homepage', 'classes', 'events', 'shop', 'partners', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities', 'messages'] as const).map((tab) => (
+              {(['homepage', 'classes', 'events', 'shop', 'partners', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities', 'messages', 'schedule'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -1599,9 +1697,193 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
+          ) : activeTab === 'schedule' ? (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold uppercase">Class Schedule</h2>
+                <button
+                  onClick={handleAdd}
+                  className="bg-black text-white px-6 py-2 font-bold text-sm uppercase hover:bg-gray-800 transition-colors"
+                >
+                  Add New Class
+                </button>
+              </div>
+
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-black text-white">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Day</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Time</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Class Name</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Instructor</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Duration</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Level</th>
+                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {schedule.length > 0 ? (
+                        schedule.map((item) => (
+                          <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
+                            <td className="px-4 py-3 text-sm font-semibold">{item.day}</td>
+                            <td className="px-4 py-3 text-sm">{item.time}</td>
+                            <td className="px-4 py-3 text-sm font-medium">{item.name}</td>
+                            <td className="px-4 py-3 text-sm">{item.instructor}</td>
+                            <td className="px-4 py-3 text-sm">{item.duration}</td>
+                            <td className="px-4 py-3 text-sm">
+                              <span className="px-2 py-1 bg-gray-200 text-gray-800 text-xs font-semibold uppercase rounded">
+                                {item.level}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-sm">
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleEdit(item)}
+                                  className="bg-blue-500 text-white px-3 py-1 text-xs font-bold uppercase hover:bg-blue-600 transition-colors"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(item.id)}
+                                  className="bg-red-500 text-white px-3 py-1 text-xs font-bold uppercase hover:bg-red-600 transition-colors"
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      ) : (
+                        <tr>
+                          <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
+                            No schedule items. Click "Add New Class" to get started.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       </div>
+
+      {/* Edit Modal for Schedule */}
+      {isEditing && editingSchedule && activeTab === 'schedule' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold uppercase mb-6">
+              {editingSchedule.id && schedule.find(s => s.id === editingSchedule.id) ? 'Edit' : 'Add'} Class Schedule
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Class Name *</label>
+                <input
+                  type="text"
+                  value={editingSchedule.name}
+                  onChange={(e) => setEditingSchedule({ ...editingSchedule, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  placeholder="e.g., Morning Yoga"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Instructor *</label>
+                <input
+                  type="text"
+                  value={editingSchedule.instructor}
+                  onChange={(e) => setEditingSchedule({ ...editingSchedule, instructor: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  placeholder="e.g., Sarah Johnson"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Day *</label>
+                  <select
+                    value={editingSchedule.day}
+                    onChange={(e) => setEditingSchedule({ ...editingSchedule, day: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  >
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday">Saturday</option>
+                    <option value="Sunday">Sunday</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Time *</label>
+                  <input
+                    type="time"
+                    value={editingSchedule.time}
+                    onChange={(e) => setEditingSchedule({ ...editingSchedule, time: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Duration *</label>
+                  <select
+                    value={editingSchedule.duration}
+                    onChange={(e) => setEditingSchedule({ ...editingSchedule, duration: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  >
+                    <option value="30 min">30 min</option>
+                    <option value="45 min">45 min</option>
+                    <option value="50 min">50 min</option>
+                    <option value="60 min">60 min</option>
+                    <option value="75 min">75 min</option>
+                    <option value="90 min">90 min</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Level *</label>
+                  <select
+                    value={editingSchedule.level}
+                    onChange={(e) => setEditingSchedule({ ...editingSchedule, level: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  >
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                    <option value="All Levels">All Levels</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={handleSave}
+                className="flex-1 bg-black text-white px-6 py-3 font-bold uppercase hover:bg-gray-800 transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditingSchedule(null);
+                }}
+                className="flex-1 bg-gray-200 text-black px-6 py-3 font-bold uppercase hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit Modal for Collaborations */}
       {isEditing && editingCollaboration && activeTab === 'collaborations' && (
