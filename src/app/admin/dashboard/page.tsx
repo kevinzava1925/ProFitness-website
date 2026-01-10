@@ -455,7 +455,26 @@ export default function AdminDashboard() {
           if (allContent.partners && Array.isArray(allContent.partners)) setPartners(allContent.partners);
           if (allContent.pricing && Array.isArray(allContent.pricing)) setPricingPlans(allContent.pricing);
           // Footer and hero are single objects, not arrays
-          if (allContent.footer && typeof allContent.footer === 'object') setFooterData(allContent.footer);
+          if (allContent.footer && typeof allContent.footer === 'object') {
+            // Extract footer data, excluding the id field for type safety
+            const { id, ...footerDataFromAPI } = allContent.footer as FooterData & { id?: string };
+            // Ensure all required fields exist with defaults if missing
+            setFooterData({
+              gymName: footerDataFromAPI.gymName || 'ProFitness Gym',
+              address: footerDataFromAPI.address || '',
+              city: footerDataFromAPI.city || '',
+              phone: footerDataFromAPI.phone || '',
+              email: footerDataFromAPI.email || '',
+              hoursWeekday: footerDataFromAPI.hoursWeekday || '06 AM - 10 PM',
+              hoursSaturday: footerDataFromAPI.hoursSaturday || '08 AM - 8 PM',
+              hoursSunday: footerDataFromAPI.hoursSunday || '09 AM - 6 PM',
+              instagramUrl: footerDataFromAPI.instagramUrl || '#',
+              facebookUrl: footerDataFromAPI.facebookUrl || '#',
+              youtubeUrl: footerDataFromAPI.youtubeUrl || '#',
+              tiktokUrl: footerDataFromAPI.tiktokUrl || '#',
+              copyright: footerDataFromAPI.copyright || 'Copyright ProFitness Gym 2025'
+            });
+          }
           if (allContent.collaborations && Array.isArray(allContent.collaborations)) setCollaborations(allContent.collaborations);
           if (allContent.trainers && Array.isArray(allContent.trainers)) setTrainers(allContent.trainers);
           if (allContent.amenities && Array.isArray(allContent.amenities)) setAmenities(allContent.amenities);
@@ -1031,11 +1050,38 @@ export default function AdminDashboard() {
     }
   };
 
+  // Footer handlers
+  const handleEditFooter = () => {
+    if (footerData) {
+      setEditingFooter(true);
+    } else {
+      // If no footer data exists, create a default one
+      const defaultFooter: FooterData = {
+        gymName: 'ProFitness Gym',
+        address: '123 Fitness Street',
+        city: 'City, State 12345',
+        phone: '(123) 456-7890',
+        email: 'info@profitness.com',
+        hoursWeekday: '06 AM - 10 PM',
+        hoursSaturday: '08 AM - 8 PM',
+        hoursSunday: '09 AM - 6 PM',
+        instagramUrl: '#',
+        facebookUrl: '#',
+        youtubeUrl: '#',
+        tiktokUrl: '#',
+        copyright: 'Copyright ProFitness Gym 2025'
+      };
+      setFooterData(defaultFooter);
+      setEditingFooter(true);
+    }
+  };
+
   const handleSaveFooter = async () => {
     if (!footerData) return;
     try {
       await saveContentToAPI('footer', footerData);
       setEditingFooter(false);
+      alert('Footer data updated successfully!');
     } catch (error) {
       console.error('Error saving footer:', error);
       alert('Failed to save footer. Please try again.');
@@ -1382,10 +1428,10 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold uppercase">Manage Footer</h2>
                 <button
-                  onClick={() => setEditingFooter(true)}
+                  onClick={handleEditFooter}
                   className="bg-black text-white px-6 py-2 font-bold text-sm uppercase hover:bg-gray-800 transition-colors"
                 >
-                  Edit Footer
+                  {footerData ? 'Edit Footer' : 'Add Footer'}
                 </button>
               </div>
 
@@ -2458,7 +2504,7 @@ export default function AdminDashboard() {
                 <label className="block text-sm font-medium mb-2">Gym Name</label>
                 <input
                   type="text"
-                  value={footerData.gymName}
+                  value={footerData.gymName || ''}
                   onChange={(e) => setFooterData({ ...footerData, gymName: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                 />
@@ -2468,7 +2514,7 @@ export default function AdminDashboard() {
                 <label className="block text-sm font-medium mb-2">Address</label>
                 <input
                   type="text"
-                  value={footerData.address}
+                  value={footerData.address || ''}
                   onChange={(e) => setFooterData({ ...footerData, address: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                 />
@@ -2478,7 +2524,7 @@ export default function AdminDashboard() {
                 <label className="block text-sm font-medium mb-2">City, State, ZIP</label>
                 <input
                   type="text"
-                  value={footerData.city}
+                  value={footerData.city || ''}
                   onChange={(e) => setFooterData({ ...footerData, city: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                 />
@@ -2489,7 +2535,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Phone</label>
                   <input
                     type="text"
-                    value={footerData.phone}
+                    value={footerData.phone || ''}
                     onChange={(e) => setFooterData({ ...footerData, phone: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                   />
@@ -2498,7 +2544,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Email</label>
                   <input
                     type="email"
-                    value={footerData.email}
+                    value={footerData.email || ''}
                     onChange={(e) => setFooterData({ ...footerData, email: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                   />
@@ -2510,7 +2556,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Weekday Hours</label>
                   <input
                     type="text"
-                    value={footerData.hoursWeekday}
+                    value={footerData.hoursWeekday || ''}
                     onChange={(e) => setFooterData({ ...footerData, hoursWeekday: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="06 AM - 10 PM"
@@ -2520,7 +2566,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Saturday Hours</label>
                   <input
                     type="text"
-                    value={footerData.hoursSaturday}
+                    value={footerData.hoursSaturday || ''}
                     onChange={(e) => setFooterData({ ...footerData, hoursSaturday: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="08 AM - 8 PM"
@@ -2530,7 +2576,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Sunday Hours</label>
                   <input
                     type="text"
-                    value={footerData.hoursSunday}
+                    value={footerData.hoursSunday || ''}
                     onChange={(e) => setFooterData({ ...footerData, hoursSunday: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="09 AM - 6 PM"
@@ -2543,7 +2589,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Instagram URL</label>
                   <input
                     type="url"
-                    value={footerData.instagramUrl}
+                    value={footerData.instagramUrl || ''}
                     onChange={(e) => setFooterData({ ...footerData, instagramUrl: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="https://instagram.com/..."
@@ -2553,7 +2599,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Facebook URL</label>
                   <input
                     type="url"
-                    value={footerData.facebookUrl}
+                    value={footerData.facebookUrl || ''}
                     onChange={(e) => setFooterData({ ...footerData, facebookUrl: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="https://facebook.com/..."
@@ -2563,7 +2609,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">YouTube URL</label>
                   <input
                     type="url"
-                    value={footerData.youtubeUrl}
+                    value={footerData.youtubeUrl || ''}
                     onChange={(e) => setFooterData({ ...footerData, youtubeUrl: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="https://youtube.com/..."
@@ -2573,7 +2619,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">TikTok URL</label>
                   <input
                     type="url"
-                    value={footerData.tiktokUrl}
+                    value={footerData.tiktokUrl || ''}
                     onChange={(e) => setFooterData({ ...footerData, tiktokUrl: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="https://tiktok.com/..."
@@ -2585,7 +2631,7 @@ export default function AdminDashboard() {
                 <label className="block text-sm font-medium mb-2">Copyright Text</label>
                 <input
                   type="text"
-                  value={footerData.copyright}
+                  value={footerData.copyright || ''}
                   onChange={(e) => setFooterData({ ...footerData, copyright: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                 />
