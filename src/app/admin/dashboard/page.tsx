@@ -1076,10 +1076,44 @@ export default function AdminDashboard() {
     }
   };
 
+  // Reload footer data from API
+  const reloadFooterData = async () => {
+    try {
+      const response = await fetch('/api/content');
+      if (response.ok) {
+        const allContent = await response.json();
+        if (allContent.footer && typeof allContent.footer === 'object') {
+          // Extract footer data, excluding the id field for type safety
+          const { id, ...footerDataFromAPI } = allContent.footer as FooterData & { id?: string };
+          // Ensure all required fields exist with defaults if missing
+          setFooterData({
+            gymName: footerDataFromAPI.gymName || 'ProFitness Gym',
+            address: footerDataFromAPI.address || '',
+            city: footerDataFromAPI.city || '',
+            phone: footerDataFromAPI.phone || '',
+            email: footerDataFromAPI.email || '',
+            hoursWeekday: footerDataFromAPI.hoursWeekday || '06 AM - 10 PM',
+            hoursSaturday: footerDataFromAPI.hoursSaturday || '08 AM - 8 PM',
+            hoursSunday: footerDataFromAPI.hoursSunday || '09 AM - 6 PM',
+            instagramUrl: footerDataFromAPI.instagramUrl || '#',
+            facebookUrl: footerDataFromAPI.facebookUrl || '#',
+            youtubeUrl: footerDataFromAPI.youtubeUrl || '#',
+            tiktokUrl: footerDataFromAPI.tiktokUrl || '#',
+            copyright: footerDataFromAPI.copyright || 'Copyright ProFitness Gym 2025'
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error reloading footer data:', error);
+    }
+  };
+
   const handleSaveFooter = async () => {
     if (!footerData) return;
     try {
       await saveContentToAPI('footer', footerData);
+      // Reload footer data from API to ensure sync
+      await reloadFooterData();
       setEditingFooter(false);
       alert('Footer data updated successfully!');
     } catch (error) {
