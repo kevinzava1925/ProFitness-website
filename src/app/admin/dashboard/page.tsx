@@ -1697,7 +1697,9 @@ export default function AdminDashboard() {
                 </div>
               </div>
             </div>
-          ) : activeTab === 'schedule' ? (
+          )}
+
+          {activeTab === 'schedule' && (
             <div className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold uppercase">Class Schedule</h2>
