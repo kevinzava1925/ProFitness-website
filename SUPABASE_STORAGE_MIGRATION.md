@@ -129,8 +129,3 @@ Your website is now fully migrated to Supabase Storage! 🎉
 
 
 
-
-
-
-
-

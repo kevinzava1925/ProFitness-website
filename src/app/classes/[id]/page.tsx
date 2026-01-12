@@ -6,7 +6,6 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Navigation from "../../components/Navigation";
 import Footer from "../../components/Footer";
-import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type ClassItem = {
   id: string;
@@ -26,58 +25,43 @@ export default function ClassDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadClass = async () => {
-      try {
-        // Always try to load from API first (Supabase) - add cache busting to ensure fresh data
-        const response = await fetch('/api/content?type=classes&' + new Date().getTime());
-        if (response.ok) {
-          const apiClasses = await response.json();
-          
-          // Find the class by ID
-          if (Array.isArray(apiClasses) && apiClasses.length > 0) {
-            const foundClass = apiClasses.find((c: ClassItem) => c.id === classId);
-            if (foundClass) {
-              setClassItem(foundClass);
-              setLoading(false);
-              return; // Successfully loaded from API
-            }
-          }
-        } else {
-          console.error('API response not OK:', response.status, response.statusText);
-        }
-      } catch (error) {
-        console.error('Error loading from API:', error);
-      }
-
-      // Fallback to localStorage if API fails
-      const loadedClasses = localStorage.getItem("classes");
-      if (loadedClasses) {
-        const classes = JSON.parse(loadedClasses);
-        const foundClass = classes.find((c: ClassItem) => c.id === classId);
-        if (foundClass) {
-          setClassItem(foundClass);
-          setLoading(false);
-          return;
+    const loadedClasses = localStorage.getItem("classes");
+    if (loadedClasses) {
+      const classes = JSON.parse(loadedClasses);
+      const foundClass = classes.find((c: ClassItem) => c.id === classId);
+      if (foundClass) {
+        setClassItem(foundClass);
+      } else {
+        // Fallback to default classes if not found
+        const defaultClasses = [
+          { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
+          { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
+          { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
+          { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
+          { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
+          { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
+        ];
+        const fallbackClass = defaultClasses.find(c => c.id === classId);
+        if (fallbackClass) {
+          setClassItem(fallbackClass);
         }
       }
-
-      // Fallback to default classes if not found
+    } else {
+      // Use default classes
       const defaultClasses = [
-        { id: '1', name: 'MUAY THAI', image: DEFAULT_IMAGES.classes.muayThai, description: 'Traditional Thai Boxing' },
-        { id: '2', name: 'FITNESS', image: DEFAULT_IMAGES.classes.fitness, description: 'Strength and Conditioning' },
-        { id: '3', name: 'MMA', image: DEFAULT_IMAGES.classes.mma, description: 'Mixed Martial Arts' },
-        { id: '4', name: 'BJJ', image: DEFAULT_IMAGES.classes.bjj, description: 'Brazilian Jiu-Jitsu' },
-        { id: '5', name: 'BOXING', image: DEFAULT_IMAGES.classes.boxing, description: 'Western Boxing' },
-        { id: '6', name: 'RECOVERY', image: DEFAULT_IMAGES.classes.recovery, description: 'Yoga and Massage' }
+        { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
+        { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
+        { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
+        { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
+        { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
+        { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
       ];
       const fallbackClass = defaultClasses.find(c => c.id === classId);
       if (fallbackClass) {
         setClassItem(fallbackClass);
       }
-      setLoading(false);
-    };
-
-    loadClass();
+    }
+    setLoading(false);
   }, [classId]);
 
   if (loading) {

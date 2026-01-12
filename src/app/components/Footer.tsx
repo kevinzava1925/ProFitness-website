@@ -24,28 +24,59 @@ export default function Footer() {
   const [footerData, setFooterData] = useState<FooterData | null>(null);
 
   useEffect(() => {
-    const loadedFooter = localStorage.getItem("footerData");
-    if (loadedFooter) {
-      setFooterData(JSON.parse(loadedFooter));
-    } else {
-      const defaultFooter: FooterData = {
-        gymName: 'ProFitness Gym',
-        address: '123 Fitness Street',
-        city: 'City, State 12345',
-        phone: '(123) 456-7890',
-        email: 'info@profitness.com',
-        hoursWeekday: '06 AM - 10 PM',
-        hoursSaturday: '08 AM - 8 PM',
-        hoursSunday: '09 AM - 6 PM',
-        instagramUrl: '#',
-        facebookUrl: '#',
-        youtubeUrl: '#',
-        tiktokUrl: '#',
-        copyright: 'Copyright ProFitness Gym 2025'
-      };
-      setFooterData(defaultFooter);
-      localStorage.setItem("footerData", JSON.stringify(defaultFooter));
-    }
+    const loadContent = async () => {
+      try {
+        // Load from API (Supabase) - try fetching all content first to get footer as object
+        const response = await fetch(`/api/content?_=${Date.now()}`);
+        if (response.ok) {
+          const allContent = await response.json();
+          // Footer is returned as a single object when fetching all content
+          if (allContent.footer && typeof allContent.footer === 'object' && allContent.footer !== null) {
+            setFooterData(allContent.footer);
+            return; // Successfully loaded from API
+          }
+        }
+        
+        // Fallback to defaults if API fails or has no data
+        const defaultFooter: FooterData = {
+          gymName: 'ProFitness Gym',
+          address: '123 Fitness Street',
+          city: 'City, State 12345',
+          phone: '(123) 456-7890',
+          email: 'info@profitness.com',
+          hoursWeekday: '06 AM - 10 PM',
+          hoursSaturday: '08 AM - 8 PM',
+          hoursSunday: '09 AM - 6 PM',
+          instagramUrl: '#',
+          facebookUrl: '#',
+          youtubeUrl: '#',
+          tiktokUrl: '#',
+          copyright: 'Copyright ProFitness Gym 2025'
+        };
+        setFooterData(defaultFooter);
+      } catch (error) {
+        console.error('Error loading footer:', error);
+        // Use defaults on error
+        const defaultFooter: FooterData = {
+          gymName: 'ProFitness Gym',
+          address: '123 Fitness Street',
+          city: 'City, State 12345',
+          phone: '(123) 456-7890',
+          email: 'info@profitness.com',
+          hoursWeekday: '06 AM - 10 PM',
+          hoursSaturday: '08 AM - 8 PM',
+          hoursSunday: '09 AM - 6 PM',
+          instagramUrl: '#',
+          facebookUrl: '#',
+          youtubeUrl: '#',
+          tiktokUrl: '#',
+          copyright: 'Copyright ProFitness Gym 2025'
+        };
+        setFooterData(defaultFooter);
+      }
+    };
+
+    loadContent();
   }, []);
 
   if (!footerData) {

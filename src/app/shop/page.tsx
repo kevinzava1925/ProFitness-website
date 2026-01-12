@@ -4,7 +4,6 @@ import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
 import Image from "next/image";
 import { useState, useEffect } from "react";
-import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type ShopItem = {
   id: string;
@@ -17,41 +16,18 @@ export default function ShopPage() {
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
 
   useEffect(() => {
-    const loadShopItems = async () => {
-      try {
-        // Always try to load from API first (Supabase) - add cache busting to ensure fresh data
-        const response = await fetch('/api/content?type=shop&' + new Date().getTime());
-        if (response.ok) {
-          const apiShopItems = await response.json();
-          
-          // Set shop items from API if available
-          if (Array.isArray(apiShopItems) && apiShopItems.length > 0) {
-            setShopItems(apiShopItems);
-            return; // Successfully loaded from API
-          }
-        } else {
-          console.error('API response not OK:', response.status, response.statusText);
-        }
-      } catch (error) {
-        console.error('Error loading from API:', error);
-      }
-
-      // Fallback to localStorage if API fails
-      const loadedShop = localStorage.getItem("shopItems");
-      if (loadedShop) {
-        setShopItems(JSON.parse(loadedShop));
-      } else {
-        const defaultShop = [
-          { id: '1', name: 'T-Shirt', image: DEFAULT_IMAGES.shop.tshirt, price: '$29.99' },
-          { id: '2', name: 'Hoodie', image: DEFAULT_IMAGES.shop.hoodie, price: '$59.99' },
-          { id: '3', name: 'Cap', image: DEFAULT_IMAGES.shop.cap, price: '$24.99' },
-          { id: '4', name: 'Duffle Bag', image: DEFAULT_IMAGES.shop.duffle, price: '$39.99' }
-        ];
-        setShopItems(defaultShop);
-      }
-    };
-
-    loadShopItems();
+    const loadedShop = localStorage.getItem("shopItems");
+    if (loadedShop) {
+      setShopItems(JSON.parse(loadedShop));
+    } else {
+      const defaultShop = [
+        { id: '1', name: 'T-Shirt', image: 'https://ext.same-assets.com/443545936/2710426474.webp', price: '$29.99' },
+        { id: '2', name: 'Hoodie', image: 'https://ext.same-assets.com/443545936/480816838.webp', price: '$59.99' },
+        { id: '3', name: 'Cap', image: 'https://ext.same-assets.com/443545936/1859491465.webp', price: '$24.99' },
+        { id: '4', name: 'Duffle Bag', image: 'https://ext.same-assets.com/443545936/3860077197.webp', price: '$39.99' }
+      ];
+      setShopItems(defaultShop);
+    }
   }, []);
 
   return (

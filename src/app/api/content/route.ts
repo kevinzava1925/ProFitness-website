@@ -52,22 +52,20 @@ export async function GET(request: NextRequest) {
       }
 
       // Group by type
-      const grouped: Record<string, unknown[] | Record<string, unknown>> = {};
+      const grouped: Record<string, unknown> = {};
       data.forEach(item => {
         // For single objects (hero, footer), store as object, not array
         if (item.type === 'hero' || item.type === 'footer') {
           grouped[item.type] = {
             ...item.data,
             id: item.id,
-          } as Record<string, unknown>;
+          };
         } else {
           // For arrays (classes, events, etc.), store as array
-          const typeKey = item.type;
-          if (!grouped[typeKey]) {
-            grouped[typeKey] = [];
+          if (!grouped[item.type]) {
+            grouped[item.type] = [];
           }
-          // Type assertion: we know it's an array because we just initialized it or it was already an array
-          (grouped[typeKey] as unknown[]).push({
+          grouped[item.type].push({
             ...item.data,
             id: item.id,
           });

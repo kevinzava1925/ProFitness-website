@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type ContentItem = {
   id: string;
@@ -68,36 +67,9 @@ type HeroMedia = {
   type: 'image' | 'video';
 };
 
-type ContactMessage = {
-  id: string;
-  name: string;
-  email: string;
-  phone: string | null;
-  subject: string;
-  message: string;
-  created_at: string;
-};
-
-type ContactRecipient = {
-  id: string;
-  email: string;
-  is_active: boolean;
-  created_at: string;
-};
-
-type ClassSchedule = {
-  id: string;
-  name: string;
-  instructor: string;
-  time: string;
-  day: string;
-  duration: string;
-  level: string;
-};
-
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'homepage' | 'classes' | 'events' | 'shop' | 'partners' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities' | 'messages' | 'schedule'>('homepage');
+  const [activeTab, setActiveTab] = useState<'homepage' | 'classes' | 'events' | 'shop' | 'partners' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities'>('homepage');
   const [classes, setClasses] = useState<ContentItem[]>([]);
   const [events, setEvents] = useState<ContentItem[]>([]);
   const [shopItems, setShopItems] = useState<ContentItem[]>([]);
@@ -116,38 +88,15 @@ export default function AdminDashboard() {
   const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadField, setUploadField] = useState<string | null>(null);
-  const [messages, setMessages] = useState<ContactMessage[]>([]);
-  const [recipients, setRecipients] = useState<ContactRecipient[]>([]);
-  const [newRecipientEmail, setNewRecipientEmail] = useState('');
-  const [isAddingRecipient, setIsAddingRecipient] = useState(false);
-  const [schedule, setSchedule] = useState<ClassSchedule[]>([]);
-  const [editingSchedule, setEditingSchedule] = useState<ClassSchedule | null>(null);
 
-  // Image upload function - Upload to Cloudinary
+  // Image upload function - Upload to Supabase Storage
   const handleImageUpload = async (file: File, fieldName: string) => {
     if (!file) return;
 
-    // Check file type - reject unsupported formats
-    const fileName = file.name.toLowerCase();
-    const fileExtension = fileName.split('.').pop();
-    const unsupportedFormats = ['heic', 'heif', 'raw', 'cr2', 'nef', 'orf', 'sr2'];
-    
-    if (unsupportedFormats.includes(fileExtension || '')) {
-      alert(`Unsupported file format: .${fileExtension}\n\nPlease convert your image to JPG, PNG, or WEBP format.\n\nFor HEIC files from iPhone:\n- Use "Convert to JPEG" on iPhone\n- Or use an online converter like heictojpg.com`);
-      return;
-    }
-
-    // Check if it's a valid image type
-    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-    if (!validImageTypes.includes(file.type) && !file.type.startsWith('image/')) {
-      alert(`Invalid file type: ${file.type}\n\nPlease upload a JPG, PNG, GIF, WEBP, or SVG image.`);
-      return;
-    }
-
-    // Check file size (200MB limit for images - Cloudinary supports larger files)
-    const maxSize = 200 * 1024 * 1024; // 200MB in bytes
+    // Check file size (20MB limit for images)
+    const maxSize = 20 * 1024 * 1024; // 20MB in bytes
     if (file.size > maxSize) {
-      alert(`File is too large. Maximum size is 200MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      alert(`File is too large. Maximum size is 20MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
       return;
     }
 
@@ -155,55 +104,12 @@ export default function AdminDashboard() {
     setUploadField(fieldName);
 
     try {
-      // For files over 2MB, use direct Cloudinary upload to bypass Netlify body size limits
-      const useDirectUpload = file.size > 2 * 1024 * 1024; // 2MB threshold
-      
-      let imageUrl: string;
-      
-      if (useDirectUpload) {
-        // Direct upload to Cloudinary (bypasses Netlify limits)
-        const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
-        
-        // Get upload signature
-        const sigResponse = await fetch(`/api/upload-signature?resource_type=${resourceType}`);
-        if (!sigResponse.ok) {
-          throw new Error('Failed to get upload signature');
-        }
-        const sigData = await sigResponse.json();
-        
-        // Create FormData for Cloudinary direct upload
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', file);
-        uploadFormData.append('api_key', sigData.apiKey);
-        uploadFormData.append('timestamp', sigData.timestamp.toString());
-        uploadFormData.append('signature', sigData.signature);
-        uploadFormData.append('folder', sigData.folder);
-        if (resourceType !== 'image') {
-          uploadFormData.append('resource_type', resourceType);
-        }
-        
-        // Upload directly to Cloudinary
-        const cloudinaryResponse = await fetch(
-          `https://api.cloudinary.com/v1_1/${sigData.cloudName}/${resourceType}/upload`,
-          {
-            method: 'POST',
-            body: uploadFormData,
-          }
-        );
-        
-        if (!cloudinaryResponse.ok) {
-          const errorText = await cloudinaryResponse.text();
-          throw new Error(`Cloudinary upload failed: ${errorText}`);
-        }
-        
-        const cloudinaryData = await cloudinaryResponse.json();
-        imageUrl = cloudinaryData.secure_url || cloudinaryData.url;
-      } else {
-        // Use API route for smaller files (faster)
+      // Create FormData for upload
       const formData = new FormData();
       formData.append('file', file);
 
-        const response = await fetch('/api/upload-direct', {
+      // Upload to Supabase Storage via API
+      const response = await fetch('/api/upload-storage', {
         method: 'POST',
         body: formData,
       });
@@ -219,30 +125,18 @@ export default function AdminDashboard() {
         } catch (parseError) {
           errorMessage = responseText || errorMessage;
         }
-          console.error('Cloudinary upload error:', { 
-            status: response.status, 
-            message: errorMessage,
-            responseText 
-          });
+        console.error('Supabase storage upload error:', { status: response.status, message: errorMessage });
         throw new Error(errorMessage);
       }
 
       // Parse the successful response
-        let data;
-        try {
-          data = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error('Failed to parse upload response:', responseText);
-          throw new Error('Invalid response from server');
-        }
+      const data = JSON.parse(responseText);
       
       if (!data.url && !data.secure_url) {
-          console.error('Upload response missing URL:', data);
-          throw new Error('No URL returned from Cloudinary');
+        throw new Error('No URL returned from storage');
       }
       
-        imageUrl = data.url || data.secure_url;
-      }
+      const imageUrl = data.url || data.secure_url;
       
       // Update the appropriate field based on what we're editing
       if (activeTab === 'trainers' && editingTrainer) {
@@ -252,9 +146,6 @@ export default function AdminDashboard() {
       } else if (editingItem) {
         setEditingItem({ ...editingItem, [fieldName]: imageUrl });
       }
-      
-      // Show success message
-      alert('Image uploaded successfully!');
     } catch (error) {
       console.error('Upload error:', error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to upload image. Please try again.';
@@ -265,7 +156,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // Handle hero media upload (image or video) - Upload to Cloudinary
+  // Handle hero media upload (image or video) - Upload to Supabase Storage
   const handleHeroMediaUpload = async (file: File) => {
     if (!file) return;
 
@@ -278,10 +169,10 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Check file size (200MB for images, 500MB for videos - Cloudinary supports larger files)
-    const maxSize = isVideo ? 500 * 1024 * 1024 : 200 * 1024 * 1024; // 500MB for videos, 200MB for images
+    // Check file size (20MB for images, 200MB for videos)
+    const maxSize = isVideo ? 200 * 1024 * 1024 : 20 * 1024 * 1024; // 200MB for videos, 20MB for images
     if (file.size > maxSize) {
-      const maxSizeMB = isVideo ? 500 : 200;
+      const maxSizeMB = isVideo ? 200 : 20;
       alert(`File is too large. Maximum size is ${maxSizeMB}MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
       return;
     }
@@ -290,56 +181,12 @@ export default function AdminDashboard() {
     setUploadField('heroMedia');
 
     try {
-      // For files over 2MB, use direct Cloudinary upload to bypass Netlify body size limits
-      const useDirectUpload = file.size > 2 * 1024 * 1024; // 2MB threshold
-      
-      let mediaUrl: string;
-      let resourceType: string;
-      
-      if (useDirectUpload) {
-        // Direct upload to Cloudinary (bypasses Netlify limits)
-        resourceType = isVideo ? 'video' : 'image';
-        
-        // Get upload signature
-        const sigResponse = await fetch(`/api/upload-signature?resource_type=${resourceType}`);
-        if (!sigResponse.ok) {
-          throw new Error('Failed to get upload signature');
-        }
-        const sigData = await sigResponse.json();
-        
-        // Create FormData for Cloudinary direct upload
-        const uploadFormData = new FormData();
-        uploadFormData.append('file', file);
-        uploadFormData.append('api_key', sigData.apiKey);
-        uploadFormData.append('timestamp', sigData.timestamp.toString());
-        uploadFormData.append('signature', sigData.signature);
-        uploadFormData.append('folder', sigData.folder);
-        if (resourceType !== 'image') {
-          uploadFormData.append('resource_type', resourceType);
-        }
-        
-        // Upload directly to Cloudinary
-        const cloudinaryResponse = await fetch(
-          `https://api.cloudinary.com/v1_1/${sigData.cloudName}/${resourceType}/upload`,
-          {
-            method: 'POST',
-            body: uploadFormData,
-          }
-        );
-        
-        if (!cloudinaryResponse.ok) {
-          const errorText = await cloudinaryResponse.text();
-          throw new Error(`Cloudinary upload failed: ${errorText}`);
-        }
-        
-        const cloudinaryData = await cloudinaryResponse.json();
-        mediaUrl = cloudinaryData.secure_url || cloudinaryData.url;
-      } else {
-        // Use API route for smaller files (faster)
+      // Create FormData for upload
       const formData = new FormData();
       formData.append('file', file);
 
-        const response = await fetch('/api/upload-direct', {
+      // Upload to Supabase Storage via API
+      const response = await fetch('/api/upload-storage', {
         method: 'POST',
         body: formData,
       });
@@ -355,35 +202,21 @@ export default function AdminDashboard() {
         } catch (parseError) {
           errorMessage = responseText || errorMessage;
         }
-          console.error('Cloudinary upload error:', { 
-            status: response.status, 
-            message: errorMessage,
-            responseText 
-          });
+        console.error('Supabase storage upload error:', { status: response.status, message: errorMessage });
         throw new Error(errorMessage);
       }
 
       // Parse the successful response
-        let data;
-        try {
-          data = JSON.parse(responseText);
-        } catch (parseError) {
-          console.error('Failed to parse upload response:', responseText);
-          throw new Error('Invalid response from server');
-        }
+      const data = JSON.parse(responseText);
       
       if (!data.url && !data.secure_url) {
-          console.error('Upload response missing URL:', data);
-          throw new Error('No URL returned from Cloudinary');
+        throw new Error('No URL returned from storage');
       }
       
-        mediaUrl = data.url || data.secure_url;
-        resourceType = data.type || (isVideo ? 'video' : 'image');
-      }
-      
+      const mediaUrl = data.url || data.secure_url;
       const newHeroMedia: HeroMedia = {
         url: mediaUrl,
-        type: resourceType as 'image' | 'video'
+        type: data.type || (isVideo ? 'video' : 'image')
       };
 
       setHeroMedia(newHeroMedia);
@@ -400,7 +233,7 @@ export default function AdminDashboard() {
   };
 
   // Helper function to save content to Supabase API - NO localStorage fallback for syncing
-  const saveContentToAPI = async (type: string, data: ContentItem[] | PricingPlan[] | FooterData | HeroMedia | CollaborationItem[] | Trainer[] | ClassSchedule[]) => {
+  const saveContentToAPI = async (type: string, data: ContentItem[] | PricingPlan[] | FooterData | HeroMedia | CollaborationItem[] | Trainer[]) => {
     try {
       const response = await fetch('/api/content', {
         method: 'POST',
@@ -455,38 +288,11 @@ export default function AdminDashboard() {
           if (allContent.partners && Array.isArray(allContent.partners)) setPartners(allContent.partners);
           if (allContent.pricing && Array.isArray(allContent.pricing)) setPricingPlans(allContent.pricing);
           // Footer and hero are single objects, not arrays
-          if (allContent.footer && typeof allContent.footer === 'object') {
-            // Extract footer data, excluding the id field for type safety
-            const { id, ...footerDataFromAPI } = allContent.footer as FooterData & { id?: string };
-            // Ensure all required fields exist with defaults if missing
-            setFooterData({
-              gymName: footerDataFromAPI.gymName || 'ProFitness Gym',
-              address: footerDataFromAPI.address || '',
-              city: footerDataFromAPI.city || '',
-              phone: footerDataFromAPI.phone || '',
-              email: footerDataFromAPI.email || '',
-              hoursWeekday: footerDataFromAPI.hoursWeekday || '06 AM - 10 PM',
-              hoursSaturday: footerDataFromAPI.hoursSaturday || '08 AM - 8 PM',
-              hoursSunday: footerDataFromAPI.hoursSunday || '09 AM - 6 PM',
-              instagramUrl: footerDataFromAPI.instagramUrl || '#',
-              facebookUrl: footerDataFromAPI.facebookUrl || '#',
-              youtubeUrl: footerDataFromAPI.youtubeUrl || '#',
-              tiktokUrl: footerDataFromAPI.tiktokUrl || '#',
-              copyright: footerDataFromAPI.copyright || 'Copyright ProFitness Gym 2025'
-            });
-          }
+          if (allContent.footer && typeof allContent.footer === 'object') setFooterData(allContent.footer);
           if (allContent.collaborations && Array.isArray(allContent.collaborations)) setCollaborations(allContent.collaborations);
           if (allContent.trainers && Array.isArray(allContent.trainers)) setTrainers(allContent.trainers);
           if (allContent.amenities && Array.isArray(allContent.amenities)) setAmenities(allContent.amenities);
-          if (allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url) {
-            setHeroMedia(allContent.hero);
-          } else {
-            // Only set default if API didn't provide hero
-            setHeroMedia({
-              url: DEFAULT_IMAGES.hero,
-              type: "image"
-            });
-          }
+          if (allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url) setHeroMedia(allContent.hero);
           
           return; // Successfully loaded from API
         }
@@ -503,12 +309,12 @@ export default function AdminDashboard() {
       if (loadedClasses) setClasses(JSON.parse(loadedClasses));
       else {
         const defaultClasses = [
-          { id: '1', name: 'MUAY THAI', image: DEFAULT_IMAGES.classes.muayThai, description: 'Traditional Thai Boxing' },
-          { id: '2', name: 'FITNESS', image: DEFAULT_IMAGES.classes.fitness, description: 'Strength and Conditioning' },
-          { id: '3', name: 'MMA', image: DEFAULT_IMAGES.classes.mma, description: 'Mixed Martial Arts' },
-          { id: '4', name: 'BJJ', image: DEFAULT_IMAGES.classes.bjj, description: 'Brazilian Jiu-Jitsu' },
-          { id: '5', name: 'BOXING', image: DEFAULT_IMAGES.classes.boxing, description: 'Western Boxing' },
-          { id: '6', name: 'RECOVERY', image: DEFAULT_IMAGES.classes.recovery, description: 'Yoga and Massage' }
+          { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
+          { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
+          { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
+          { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
+          { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
+          { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
         ];
         setClasses(defaultClasses);
       }
@@ -516,9 +322,9 @@ export default function AdminDashboard() {
       if (loadedEvents) setEvents(JSON.parse(loadedEvents));
       else {
         const defaultEvents = [
-          { id: '1', name: 'Intro to Martial Arts for FLINTA*', image: DEFAULT_IMAGES.events.event1, date: 'SAMSTAG & SONNTAG', description: 'Das Wochenendseminar von und für FLINTA*s zur Einführung in den Kampfsport.' },
-          { id: '2', name: 'Fightchallenge Round Six', image: DEFAULT_IMAGES.events.event2, date: '6.12.25', description: 'Wir präsentieren "FightChallenge - Round Six' },
-          { id: '3', name: 'Defensive Boxing Wrestling for MMA', image: DEFAULT_IMAGES.events.event3, date: '13.12.25', description: 'Join and learn all about boxing and wrestling for MMA.' }
+          { id: '1', name: 'Intro to Martial Arts for FLINTA*', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'SAMSTAG & SONNTAG', description: 'Das Wochenendseminar von und für FLINTA*s zur Einführung in den Kampfsport.' },
+          { id: '2', name: 'Fightchallenge Round Six', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: '6.12.25', description: 'Wir präsentieren "FightChallenge - Round Six' },
+          { id: '3', name: 'Defensive Boxing Wrestling for MMA', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: '13.12.25', description: 'Join and learn all about boxing and wrestling for MMA.' }
         ];
         setEvents(defaultEvents);
       }
@@ -526,10 +332,10 @@ export default function AdminDashboard() {
       if (loadedShop) setShopItems(JSON.parse(loadedShop));
       else {
         const defaultShop = [
-          { id: '1', name: 'Cap', image: DEFAULT_IMAGES.shop.cap },
-          { id: '2', name: 'Duffle Bag', image: DEFAULT_IMAGES.shop.duffle },
-          { id: '3', name: 'T-Shirt', image: DEFAULT_IMAGES.shop.tshirt },
-          { id: '4', name: 'Hoodie', image: DEFAULT_IMAGES.shop.hoodie }
+          { id: '1', name: 'Cap', image: 'https://ext.same-assets.com/443545936/1859491465.webp' },
+          { id: '2', name: 'Duffle Bag', image: 'https://ext.same-assets.com/443545936/3860077197.webp' },
+          { id: '3', name: 'T-Shirt', image: 'https://ext.same-assets.com/443545936/2710426474.webp' },
+          { id: '4', name: 'Hoodie', image: 'https://ext.same-assets.com/443545936/480816838.webp' }
         ];
         setShopItems(defaultShop);
       }
@@ -537,8 +343,8 @@ export default function AdminDashboard() {
       if (loadedPartners) setPartners(JSON.parse(loadedPartners));
       else {
         const defaultPartners = [
-          { id: '1', name: 'GEMMAF', image: DEFAULT_IMAGES.partners.gemmaf },
-          { id: '2', name: 'AMMAG', image: DEFAULT_IMAGES.partners.ammag }
+          { id: '1', name: 'GEMMAF', image: 'https://ext.same-assets.com/443545936/2709833716.webp' },
+          { id: '2', name: 'AMMAG', image: 'https://ext.same-assets.com/443545936/59465891.webp' }
         ];
         setPartners(defaultPartners);
       }
@@ -601,8 +407,8 @@ export default function AdminDashboard() {
         setCollaborations(JSON.parse(loadedCollaborations));
       } else {
         const defaultCollaborations: CollaborationItem[] = [
-          { id: '1', name: 'Fitness Brand A', image: DEFAULT_IMAGES.collaborations.brandA, description: 'Premium fitness equipment and gear' },
-          { id: '2', name: 'Nutrition Company B', image: DEFAULT_IMAGES.collaborations.brandB, description: 'Health supplements and nutrition products' }
+          { id: '1', name: 'Fitness Brand A', image: 'https://ext.same-assets.com/443545936/1859491465.webp', description: 'Premium fitness equipment and gear' },
+          { id: '2', name: 'Nutrition Company B', image: 'https://ext.same-assets.com/443545936/3860077197.webp', description: 'Health supplements and nutrition products' }
         ];
         setCollaborations(defaultCollaborations);
       }
@@ -615,7 +421,7 @@ export default function AdminDashboard() {
           { 
             id: '1', 
             name: 'John Smith', 
-            image: DEFAULT_IMAGES.trainers.trainer1, 
+            image: 'https://ext.same-assets.com/443545936/1729744263.webp', 
             specialty: 'Strength Training',
             bio: 'With over 10 years of experience in strength training and bodybuilding, John helps clients build muscle and achieve their fitness goals.',
             instagramUrl: '#',
@@ -624,7 +430,7 @@ export default function AdminDashboard() {
           { 
             id: '2', 
             name: 'Sarah Johnson', 
-            image: DEFAULT_IMAGES.trainers.trainer2, 
+            image: 'https://ext.same-assets.com/443545936/691732246.webp', 
             specialty: 'Yoga & Flexibility',
             bio: 'Certified yoga instructor specializing in flexibility, mobility, and mindfulness practices for overall wellness.',
             instagramUrl: '#',
@@ -639,12 +445,12 @@ export default function AdminDashboard() {
         setAmenities(JSON.parse(loadedAmenities));
       } else {
         const defaultAmenities: ContentItem[] = [
-          { id: '1', name: 'Locker Rooms', image: DEFAULT_IMAGES.amenities.locker, description: 'Spacious locker rooms with showers and changing facilities' },
-          { id: '2', name: 'Cardio Equipment', image: DEFAULT_IMAGES.amenities.cardio, description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
-          { id: '3', name: 'Free Weights', image: DEFAULT_IMAGES.amenities.weights, description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
-          { id: '4', name: 'Group Classes', image: DEFAULT_IMAGES.amenities.classes, description: 'Multiple group fitness studios for various classes' },
-          { id: '5', name: 'Personal Training', image: DEFAULT_IMAGES.amenities.training, description: 'Private training areas with certified personal trainers' },
-          { id: '6', name: 'Sauna & Steam Room', image: DEFAULT_IMAGES.amenities.sauna, description: 'Relaxation facilities for post-workout recovery' }
+          { id: '1', name: 'Locker Rooms', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Spacious locker rooms with showers and changing facilities' },
+          { id: '2', name: 'Cardio Equipment', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
+          { id: '3', name: 'Free Weights', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
+          { id: '4', name: 'Group Classes', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Multiple group fitness studios for various classes' },
+          { id: '5', name: 'Personal Training', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Private training areas with certified personal trainers' },
+          { id: '6', name: 'Sauna & Steam Room', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Relaxation facilities for post-workout recovery' }
         ];
         setAmenities(defaultAmenities);
       }
@@ -653,171 +459,16 @@ export default function AdminDashboard() {
       if (loadedHeroMedia) {
         setHeroMedia(JSON.parse(loadedHeroMedia));
       } else {
-        // Only set default hero if not already set from API
-        if (!heroMedia) {
         const defaultHero: HeroMedia = {
-            url: DEFAULT_IMAGES.hero,
+          url: "https://ext.same-assets.com/443545936/3789989498.webp",
           type: "image"
         };
         setHeroMedia(defaultHero);
-        }
       }
     };
 
     loadContent();
   }, []);
-
-  // Load messages and recipients when messages tab is active
-  useEffect(() => {
-    if (activeTab === 'messages') {
-      loadMessages();
-      loadRecipients();
-    }
-  }, [activeTab]);
-
-  // Load schedule when schedule tab is active
-  useEffect(() => {
-    if (activeTab === 'schedule') {
-      loadSchedule();
-    }
-  }, [activeTab]);
-
-  // Load messages
-  const loadMessages = async () => {
-    try {
-      const response = await fetch('/api/contact/messages');
-      if (response.ok) {
-        const data = await response.json();
-        setMessages(data.messages || []);
-      }
-    } catch (error) {
-      console.error('Error loading messages:', error);
-    }
-  };
-
-  // Load recipients
-  const loadRecipients = async () => {
-    try {
-      const response = await fetch('/api/contact/recipients');
-      if (response.ok) {
-        const data = await response.json();
-        setRecipients(data.recipients || []);
-      }
-    } catch (error) {
-      console.error('Error loading recipients:', error);
-    }
-  };
-
-  // Load schedule
-  const loadSchedule = async () => {
-    try {
-      const response = await fetch('/api/content?type=schedule');
-      if (response.ok) {
-        const data = await response.json();
-        setSchedule(Array.isArray(data) ? data : []);
-      } else {
-        // If API fails, try localStorage fallback
-        const loadedSchedule = localStorage.getItem("classSchedule");
-        if (loadedSchedule) {
-          setSchedule(JSON.parse(loadedSchedule));
-        }
-      }
-    } catch (error) {
-      console.error('Error loading schedule:', error);
-      // Fallback to localStorage
-      const loadedSchedule = localStorage.getItem("classSchedule");
-      if (loadedSchedule) {
-        setSchedule(JSON.parse(loadedSchedule));
-      }
-    }
-  };
-
-  // Add recipient
-  const handleAddRecipient = async () => {
-    if (!newRecipientEmail || !newRecipientEmail.includes('@')) {
-      alert('Please enter a valid email address');
-      return;
-    }
-
-    setIsAddingRecipient(true);
-    try {
-      const response = await fetch('/api/contact/recipients', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: newRecipientEmail }),
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setNewRecipientEmail('');
-        await loadRecipients();
-        alert('Recipient added successfully!');
-      } else {
-        alert(data.error || 'Failed to add recipient');
-      }
-    } catch (error) {
-      alert('Failed to add recipient');
-    } finally {
-      setIsAddingRecipient(false);
-    }
-  };
-
-  // Delete recipient
-  const handleDeleteRecipient = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this recipient?')) return;
-
-    try {
-      const response = await fetch(`/api/contact/recipients?id=${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        await loadRecipients();
-        alert('Recipient removed successfully!');
-      } else {
-        alert('Failed to remove recipient');
-      }
-    } catch (error) {
-      alert('Failed to remove recipient');
-    }
-  };
-
-  // Toggle recipient active status
-  const handleToggleRecipient = async (id: string, currentStatus: boolean) => {
-    try {
-      const response = await fetch('/api/contact/recipients', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, is_active: !currentStatus }),
-      });
-
-      if (response.ok) {
-        await loadRecipients();
-      }
-    } catch (error) {
-      console.error('Error toggling recipient:', error);
-    }
-  };
-
-  // Delete message
-  const handleDeleteMessage = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this message?')) return;
-
-    try {
-      const response = await fetch(`/api/contact/messages?id=${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        await loadMessages();
-        alert('Message deleted successfully!');
-      } else {
-        alert('Failed to delete message');
-      }
-    } catch (error) {
-      alert('Failed to delete message');
-    }
-  };
 
   const handleLogout = () => {
     localStorage.removeItem("adminAuth");
@@ -837,19 +488,6 @@ export default function AdminDashboard() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this item?')) return;
-
-    if (activeTab === 'schedule') {
-      try {
-        const newSchedule = schedule.filter(item => item.id !== id);
-        setSchedule(newSchedule);
-        await saveContentToAPI('schedule', newSchedule);
-        alert('Schedule item deleted successfully!');
-      } catch (error) {
-        console.error('Error deleting schedule item:', error);
-        alert('Failed to delete schedule item. Please try again.');
-      }
-      return;
-    }
 
     const updateState = (items: ContentItem[]) => items.filter(item => item.id !== id);
 
@@ -887,31 +525,12 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleEdit = (item: ContentItem | ClassSchedule) => {
-    if (activeTab === 'schedule') {
-      setEditingSchedule(item as ClassSchedule);
-      setIsEditing(true);
-      return;
-    }
-    setEditingItem(item as ContentItem);
+  const handleEdit = (item: ContentItem) => {
+    setEditingItem(item);
     setIsEditing(true);
   };
 
   const handleAdd = () => {
-    if (activeTab === 'schedule') {
-      setEditingSchedule({
-        id: Date.now().toString(),
-        name: '',
-        instructor: '',
-        time: '',
-        day: 'Monday',
-        duration: '60 min',
-        level: 'All Levels'
-      });
-      setIsEditing(true);
-      return;
-    }
-
     setEditingItem({
       id: Date.now().toString(),
       name: '',
@@ -927,29 +546,6 @@ export default function AdminDashboard() {
   };
 
   const handleSave = async () => {
-    if (activeTab === 'schedule' && editingSchedule) {
-      try {
-        const updateSchedule = (items: ClassSchedule[]) => {
-          const exists = items.find(item => item.id === editingSchedule.id);
-          if (exists) {
-            return items.map(item => item.id === editingSchedule.id ? editingSchedule : item);
-          } else {
-            return [...items, editingSchedule];
-          }
-        };
-        const newSchedule = updateSchedule(schedule);
-        setSchedule(newSchedule);
-        await saveContentToAPI('schedule', newSchedule);
-        setIsEditing(false);
-        setEditingSchedule(null);
-        alert('Schedule item saved successfully!');
-      } catch (error) {
-        console.error('Error saving schedule item:', error);
-        alert('Failed to save schedule item. Please try again.');
-      }
-      return;
-    }
-
     if (!editingItem) return;
 
     const updateItems = (items: ContentItem[]) => {
@@ -1050,72 +646,11 @@ export default function AdminDashboard() {
     }
   };
 
-  // Footer handlers
-  const handleEditFooter = () => {
-    if (footerData) {
-      setEditingFooter(true);
-    } else {
-      // If no footer data exists, create a default one
-      const defaultFooter: FooterData = {
-        gymName: 'ProFitness Gym',
-        address: '123 Fitness Street',
-        city: 'City, State 12345',
-        phone: '(123) 456-7890',
-        email: 'info@profitness.com',
-        hoursWeekday: '06 AM - 10 PM',
-        hoursSaturday: '08 AM - 8 PM',
-        hoursSunday: '09 AM - 6 PM',
-        instagramUrl: '#',
-        facebookUrl: '#',
-        youtubeUrl: '#',
-        tiktokUrl: '#',
-        copyright: 'Copyright ProFitness Gym 2025'
-      };
-      setFooterData(defaultFooter);
-      setEditingFooter(true);
-    }
-  };
-
-  // Reload footer data from API
-  const reloadFooterData = async () => {
-    try {
-      const response = await fetch('/api/content');
-      if (response.ok) {
-        const allContent = await response.json();
-        if (allContent.footer && typeof allContent.footer === 'object') {
-          // Extract footer data, excluding the id field for type safety
-          const { id, ...footerDataFromAPI } = allContent.footer as FooterData & { id?: string };
-          // Ensure all required fields exist with defaults if missing
-          setFooterData({
-            gymName: footerDataFromAPI.gymName || 'ProFitness Gym',
-            address: footerDataFromAPI.address || '',
-            city: footerDataFromAPI.city || '',
-            phone: footerDataFromAPI.phone || '',
-            email: footerDataFromAPI.email || '',
-            hoursWeekday: footerDataFromAPI.hoursWeekday || '06 AM - 10 PM',
-            hoursSaturday: footerDataFromAPI.hoursSaturday || '08 AM - 8 PM',
-            hoursSunday: footerDataFromAPI.hoursSunday || '09 AM - 6 PM',
-            instagramUrl: footerDataFromAPI.instagramUrl || '#',
-            facebookUrl: footerDataFromAPI.facebookUrl || '#',
-            youtubeUrl: footerDataFromAPI.youtubeUrl || '#',
-            tiktokUrl: footerDataFromAPI.tiktokUrl || '#',
-            copyright: footerDataFromAPI.copyright || 'Copyright ProFitness Gym 2025'
-          });
-        }
-      }
-    } catch (error) {
-      console.error('Error reloading footer data:', error);
-    }
-  };
-
   const handleSaveFooter = async () => {
     if (!footerData) return;
     try {
       await saveContentToAPI('footer', footerData);
-      // Reload footer data from API to ensure sync
-      await reloadFooterData();
       setEditingFooter(false);
-      alert('Footer data updated successfully!');
     } catch (error) {
       console.error('Error saving footer:', error);
       alert('Failed to save footer. Please try again.');
@@ -1290,7 +825,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="border-b border-gray-200">
             <nav className="flex -mb-px overflow-x-auto">
-              {(['homepage', 'classes', 'events', 'shop', 'partners', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities', 'messages', 'schedule'] as const).map((tab) => (
+              {(['homepage', 'classes', 'events', 'shop', 'partners', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -1462,10 +997,10 @@ export default function AdminDashboard() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold uppercase">Manage Footer</h2>
                 <button
-                  onClick={handleEditFooter}
+                  onClick={() => setEditingFooter(true)}
                   className="bg-black text-white px-6 py-2 font-bold text-sm uppercase hover:bg-gray-800 transition-colors"
                 >
-                  {footerData ? 'Edit Footer' : 'Add Footer'}
+                  Edit Footer
                 </button>
               </div>
 
@@ -1647,325 +1182,8 @@ export default function AdminDashboard() {
               </div>
             </>
           )}
-
-          {activeTab === 'messages' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Contact Messages</h2>
-                <button
-                  onClick={() => { loadMessages(); loadRecipients(); }}
-                  className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-                >
-                  Refresh
-                </button>
-              </div>
-
-              {/* Recipient Email Management */}
-              <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
-                <h3 className="text-xl font-bold mb-4">Email Recipients</h3>
-                <p className="text-sm text-gray-600 mb-4">Add email addresses that will receive contact form submissions.</p>
-                <div className="flex gap-2 mb-4">
-                  <input
-                    type="email"
-                    value={newRecipientEmail}
-                    onChange={(e) => setNewRecipientEmail(e.target.value)}
-                    placeholder="Add recipient email"
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddRecipient();
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={handleAddRecipient}
-                    disabled={isAddingRecipient}
-                    className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800 disabled:opacity-50"
-                  >
-                    {isAddingRecipient ? 'Adding...' : 'Add'}
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {recipients.map((recipient) => (
-                    <div key={recipient.id} className="flex items-center justify-between p-3 bg-white rounded border border-gray-200">
-                      <div className="flex items-center gap-3">
-                        <span className={recipient.is_active ? 'text-gray-900 font-medium' : 'text-gray-400'}>
-                          {recipient.email}
-                        </span>
-                        <span className={`text-xs px-2 py-1 rounded ${recipient.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600'}`}>
-                          {recipient.is_active ? 'Active' : 'Inactive'}
-                        </span>
-                      </div>
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleToggleRecipient(recipient.id, recipient.is_active)}
-                          className="px-3 py-1 text-sm bg-blue-500 text-white rounded hover:bg-blue-600"
-                        >
-                          {recipient.is_active ? 'Deactivate' : 'Activate'}
-                        </button>
-                        <button
-                          onClick={() => handleDeleteRecipient(recipient.id)}
-                          className="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  {recipients.length === 0 && (
-                    <p className="text-gray-500 text-sm p-3 bg-white rounded border border-gray-200">No recipients added. Add emails to receive contact form messages.</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Messages List */}
-              <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-100">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Date</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Name</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Email</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Phone</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Subject</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Message</th>
-                        <th className="px-4 py-3 text-left text-sm font-semibold">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {messages.map((msg) => (
-                        <tr key={msg.id} className="border-t hover:bg-gray-50">
-                          <td className="px-4 py-3 text-sm">
-                            {new Date(msg.created_at).toLocaleDateString()}
-                            <br />
-                            <span className="text-xs text-gray-500">
-                              {new Date(msg.created_at).toLocaleTimeString()}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-sm font-medium">{msg.name}</td>
-                          <td className="px-4 py-3 text-sm">
-                            <a href={`mailto:${msg.email}`} className="text-blue-600 hover:underline">
-                              {msg.email}
-                            </a>
-                          </td>
-                          <td className="px-4 py-3 text-sm">{msg.phone || '-'}</td>
-                          <td className="px-4 py-3 text-sm">{msg.subject}</td>
-                          <td className="px-4 py-3 text-sm max-w-xs">
-                            <div className="truncate" title={msg.message}>
-                              {msg.message}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-sm">
-                            <button
-                              onClick={() => handleDeleteMessage(msg.id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {messages.length === 0 && (
-                    <div className="p-8 text-center text-gray-500">
-                      No messages yet.
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {activeTab === 'schedule' && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold uppercase">Class Schedule</h2>
-                <button
-                  onClick={handleAdd}
-                  className="bg-black text-white px-6 py-2 font-bold text-sm uppercase hover:bg-gray-800 transition-colors"
-                >
-                  Add New Class
-                </button>
-              </div>
-
-              <div className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-black text-white">
-                      <tr>
-                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Day</th>
-                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Time</th>
-                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Class Name</th>
-                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Instructor</th>
-                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Duration</th>
-                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Level</th>
-                        <th className="px-4 py-3 text-left text-sm font-bold uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {schedule.length > 0 ? (
-                        schedule.map((item) => (
-                          <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50">
-                            <td className="px-4 py-3 text-sm font-semibold">{item.day}</td>
-                            <td className="px-4 py-3 text-sm">{item.time}</td>
-                            <td className="px-4 py-3 text-sm font-medium">{item.name}</td>
-                            <td className="px-4 py-3 text-sm">{item.instructor}</td>
-                            <td className="px-4 py-3 text-sm">{item.duration}</td>
-                            <td className="px-4 py-3 text-sm">
-                              <span className="px-2 py-1 bg-gray-200 text-gray-800 text-xs font-semibold uppercase rounded">
-                                {item.level}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 text-sm">
-                              <div className="flex gap-2">
-                                <button
-                                  onClick={() => handleEdit(item)}
-                                  className="bg-blue-500 text-white px-3 py-1 text-xs font-bold uppercase hover:bg-blue-600 transition-colors"
-                                >
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => handleDelete(item.id)}
-                                  className="bg-red-500 text-white px-3 py-1 text-xs font-bold uppercase hover:bg-red-600 transition-colors"
-                                >
-                                  Delete
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))
-                      ) : (
-                        <tr>
-                          <td colSpan={7} className="px-4 py-8 text-center text-gray-500">
-                            No schedule items. Click "Add New Class" to get started.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       </div>
-
-      {/* Edit Modal for Schedule */}
-      {isEditing && editingSchedule && activeTab === 'schedule' && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-2xl font-bold uppercase mb-6">
-              {editingSchedule.id && schedule.find(s => s.id === editingSchedule.id) ? 'Edit' : 'Add'} Class Schedule
-            </h3>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Class Name *</label>
-                <input
-                  type="text"
-                  value={editingSchedule.name}
-                  onChange={(e) => setEditingSchedule({ ...editingSchedule, name: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
-                  placeholder="e.g., Morning Yoga"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium mb-2">Instructor *</label>
-                <input
-                  type="text"
-                  value={editingSchedule.instructor}
-                  onChange={(e) => setEditingSchedule({ ...editingSchedule, instructor: e.target.value })}
-                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
-                  placeholder="e.g., Sarah Johnson"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Day *</label>
-                  <select
-                    value={editingSchedule.day}
-                    onChange={(e) => setEditingSchedule({ ...editingSchedule, day: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
-                  >
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
-                    <option value="Saturday">Saturday</option>
-                    <option value="Sunday">Sunday</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Time *</label>
-                  <input
-                    type="time"
-                    value={editingSchedule.time}
-                    onChange={(e) => setEditingSchedule({ ...editingSchedule, time: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-2">Duration *</label>
-                  <select
-                    value={editingSchedule.duration}
-                    onChange={(e) => setEditingSchedule({ ...editingSchedule, duration: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
-                  >
-                    <option value="30 min">30 min</option>
-                    <option value="45 min">45 min</option>
-                    <option value="50 min">50 min</option>
-                    <option value="60 min">60 min</option>
-                    <option value="75 min">75 min</option>
-                    <option value="90 min">90 min</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Level *</label>
-                  <select
-                    value={editingSchedule.level}
-                    onChange={(e) => setEditingSchedule({ ...editingSchedule, level: e.target.value })}
-                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
-                  >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                    <option value="All Levels">All Levels</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-4 mt-6">
-              <button
-                onClick={handleSave}
-                className="flex-1 bg-black text-white px-6 py-3 font-bold uppercase hover:bg-gray-800 transition-colors"
-              >
-                Save
-              </button>
-              <button
-                onClick={() => {
-                  setIsEditing(false);
-                  setEditingSchedule(null);
-                }}
-                className="flex-1 bg-gray-200 text-black px-6 py-3 font-bold uppercase hover:bg-gray-300 transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Edit Modal for Collaborations */}
       {isEditing && editingCollaboration && activeTab === 'collaborations' && (
@@ -2005,28 +1223,11 @@ export default function AdminDashboard() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) handleImageUpload(file, 'image');
-                        // Reset input so same file can be selected again
-                        e.target.value = '';
                       }}
                       disabled={uploading}
                     />
                   </label>
                 </div>
-                {editingCollaboration.image && (
-                  <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden max-w-md">
-                    <div className="relative aspect-video bg-gray-100">
-                      <Image
-                        src={editingCollaboration.image}
-                        alt="Preview"
-                        fill
-                        className="object-cover"
-                        onError={(e) => {
-                          console.error('Image preview error:', e);
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div>
@@ -2099,28 +1300,11 @@ export default function AdminDashboard() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) handleImageUpload(file, 'image');
-                        // Reset input so same file can be selected again
-                        e.target.value = '';
                       }}
                       disabled={uploading}
                     />
                   </label>
                 </div>
-                {editingTrainer.image && (
-                  <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden max-w-md">
-                    <div className="relative aspect-square bg-gray-100">
-                      <Image
-                        src={editingTrainer.image}
-                        alt="Preview"
-                        fill
-                        className="object-cover"
-                        onError={(e) => {
-                          console.error('Image preview error:', e);
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
 
               <div>
@@ -2247,28 +1431,11 @@ export default function AdminDashboard() {
                       onChange={(e) => {
                         const file = e.target.files?.[0];
                         if (file) handleImageUpload(file, 'image');
-                        // Reset input so same file can be selected again
-                        e.target.value = '';
                       }}
                       disabled={uploading}
                     />
                   </label>
                 </div>
-                {editingItem.image && (
-                  <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden max-w-md">
-                    <div className="relative aspect-video bg-gray-100">
-                      <Image
-                        src={editingItem.image}
-                        alt="Preview"
-                        fill
-                        className="object-cover"
-                        onError={(e) => {
-                          console.error('Image preview error:', e);
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
               </div>
 
               {activeTab === 'shop' && (
@@ -2317,28 +1484,11 @@ export default function AdminDashboard() {
                           onChange={(e) => {
                             const file = e.target.files?.[0];
                             if (file) handleImageUpload(file, 'headerImage');
-                            // Reset input so same file can be selected again
-                            e.target.value = '';
                           }}
                           disabled={uploading}
                         />
                       </label>
                     </div>
-                    {editingItem.headerImage && (
-                      <div className="mt-3 border border-gray-200 rounded-lg overflow-hidden max-w-md">
-                        <div className="relative aspect-video bg-gray-100">
-                          <Image
-                            src={editingItem.headerImage}
-                            alt="Header Preview"
-                            fill
-                            className="object-cover"
-                            onError={(e) => {
-                              console.error('Image preview error:', e);
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   <div>
@@ -2538,7 +1688,7 @@ export default function AdminDashboard() {
                 <label className="block text-sm font-medium mb-2">Gym Name</label>
                 <input
                   type="text"
-                  value={footerData.gymName || ''}
+                  value={footerData.gymName}
                   onChange={(e) => setFooterData({ ...footerData, gymName: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                 />
@@ -2548,7 +1698,7 @@ export default function AdminDashboard() {
                 <label className="block text-sm font-medium mb-2">Address</label>
                 <input
                   type="text"
-                  value={footerData.address || ''}
+                  value={footerData.address}
                   onChange={(e) => setFooterData({ ...footerData, address: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                 />
@@ -2558,7 +1708,7 @@ export default function AdminDashboard() {
                 <label className="block text-sm font-medium mb-2">City, State, ZIP</label>
                 <input
                   type="text"
-                  value={footerData.city || ''}
+                  value={footerData.city}
                   onChange={(e) => setFooterData({ ...footerData, city: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                 />
@@ -2569,7 +1719,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Phone</label>
                   <input
                     type="text"
-                    value={footerData.phone || ''}
+                    value={footerData.phone}
                     onChange={(e) => setFooterData({ ...footerData, phone: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                   />
@@ -2578,7 +1728,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Email</label>
                   <input
                     type="email"
-                    value={footerData.email || ''}
+                    value={footerData.email}
                     onChange={(e) => setFooterData({ ...footerData, email: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                   />
@@ -2590,7 +1740,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Weekday Hours</label>
                   <input
                     type="text"
-                    value={footerData.hoursWeekday || ''}
+                    value={footerData.hoursWeekday}
                     onChange={(e) => setFooterData({ ...footerData, hoursWeekday: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="06 AM - 10 PM"
@@ -2600,7 +1750,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Saturday Hours</label>
                   <input
                     type="text"
-                    value={footerData.hoursSaturday || ''}
+                    value={footerData.hoursSaturday}
                     onChange={(e) => setFooterData({ ...footerData, hoursSaturday: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="08 AM - 8 PM"
@@ -2610,7 +1760,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Sunday Hours</label>
                   <input
                     type="text"
-                    value={footerData.hoursSunday || ''}
+                    value={footerData.hoursSunday}
                     onChange={(e) => setFooterData({ ...footerData, hoursSunday: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="09 AM - 6 PM"
@@ -2623,7 +1773,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Instagram URL</label>
                   <input
                     type="url"
-                    value={footerData.instagramUrl || ''}
+                    value={footerData.instagramUrl}
                     onChange={(e) => setFooterData({ ...footerData, instagramUrl: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="https://instagram.com/..."
@@ -2633,7 +1783,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">Facebook URL</label>
                   <input
                     type="url"
-                    value={footerData.facebookUrl || ''}
+                    value={footerData.facebookUrl}
                     onChange={(e) => setFooterData({ ...footerData, facebookUrl: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="https://facebook.com/..."
@@ -2643,7 +1793,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">YouTube URL</label>
                   <input
                     type="url"
-                    value={footerData.youtubeUrl || ''}
+                    value={footerData.youtubeUrl}
                     onChange={(e) => setFooterData({ ...footerData, youtubeUrl: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="https://youtube.com/..."
@@ -2653,7 +1803,7 @@ export default function AdminDashboard() {
                   <label className="block text-sm font-medium mb-2">TikTok URL</label>
                   <input
                     type="url"
-                    value={footerData.tiktokUrl || ''}
+                    value={footerData.tiktokUrl}
                     onChange={(e) => setFooterData({ ...footerData, tiktokUrl: e.target.value })}
                     className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                     placeholder="https://tiktok.com/..."
@@ -2665,7 +1815,7 @@ export default function AdminDashboard() {
                 <label className="block text-sm font-medium mb-2">Copyright Text</label>
                 <input
                   type="text"
-                  value={footerData.copyright || ''}
+                  value={footerData.copyright}
                   onChange={(e) => setFooterData({ ...footerData, copyright: e.target.value })}
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                 />

@@ -17,55 +17,112 @@ export default function PricingPage() {
   const [plans, setPlans] = useState<PricingPlan[]>([]);
 
   useEffect(() => {
-    const loadedPricing = localStorage.getItem("pricingPlans");
-    if (loadedPricing) {
-      setPlans(JSON.parse(loadedPricing));
-    } else {
-      const defaultPlans: PricingPlan[] = [
-        {
-          id: '1',
-          name: "Basic",
-          price: "$49",
-          period: "per month",
-          features: [
-            "Access to all group classes",
-            "Gym equipment access",
-            "Locker room facilities",
-            "Free parking"
-          ]
-        },
-        {
-          id: '2',
-          name: "Premium",
-          price: "$79",
-          period: "per month",
-          features: [
-            "Everything in Basic",
-            "Priority class booking",
-            "1 personal training session/month",
-            "Nutrition consultation",
-            "Guest passes (2/month)"
-          ],
-          popular: true
-        },
-        {
-          id: '3',
-          name: "Elite",
-          price: "$129",
-          period: "per month",
-          features: [
-            "Everything in Premium",
-            "Unlimited personal training",
-            "24/7 gym access",
-            "Towel service",
-            "Unlimited guest passes",
-            "Complimentary supplements"
-          ]
+    const loadContent = async () => {
+      try {
+        // Load from API (Supabase) with cache busting
+        const response = await fetch(`/api/content?type=pricing&_=${Date.now()}`);
+        if (response.ok) {
+          const apiPricing = await response.json();
+          if (Array.isArray(apiPricing) && apiPricing.length > 0) {
+            setPlans(apiPricing);
+            return; // Successfully loaded from API
+          }
         }
-      ];
-      setPlans(defaultPlans);
-      localStorage.setItem("pricingPlans", JSON.stringify(defaultPlans));
-    }
+        
+        // Fallback to defaults if API fails or has no data
+        const defaultPlans: PricingPlan[] = [
+          {
+            id: '1',
+            name: "Basic",
+            price: "$49",
+            period: "per month",
+            features: [
+              "Access to all group classes",
+              "Gym equipment access",
+              "Locker room facilities",
+              "Free parking"
+            ]
+          },
+          {
+            id: '2',
+            name: "Premium",
+            price: "$79",
+            period: "per month",
+            features: [
+              "Everything in Basic",
+              "Priority class booking",
+              "1 personal training session/month",
+              "Nutrition consultation",
+              "Guest passes (2/month)"
+            ],
+            popular: true
+          },
+          {
+            id: '3',
+            name: "Elite",
+            price: "$129",
+            period: "per month",
+            features: [
+              "Everything in Premium",
+              "Unlimited personal training",
+              "24/7 gym access",
+              "Towel service",
+              "Unlimited guest passes",
+              "Complimentary supplements"
+            ]
+          }
+        ];
+        setPlans(defaultPlans);
+      } catch (error) {
+        console.error('Error loading pricing:', error);
+        // Use defaults on error
+        const defaultPlans: PricingPlan[] = [
+          {
+            id: '1',
+            name: "Basic",
+            price: "$49",
+            period: "per month",
+            features: [
+              "Access to all group classes",
+              "Gym equipment access",
+              "Locker room facilities",
+              "Free parking"
+            ]
+          },
+          {
+            id: '2',
+            name: "Premium",
+            price: "$79",
+            period: "per month",
+            features: [
+              "Everything in Basic",
+              "Priority class booking",
+              "1 personal training session/month",
+              "Nutrition consultation",
+              "Guest passes (2/month)"
+            ],
+            popular: true
+          },
+          {
+            id: '3',
+            name: "Elite",
+            price: "$129",
+            period: "per month",
+            features: [
+              "Everything in Premium",
+              "Unlimited personal training",
+              "24/7 gym access",
+              "Towel service",
+              "Unlimited guest passes",
+              "Complimentary supplements"
+            ]
+          }
+        ];
+        setPlans(defaultPlans);
+      }
+    };
+
+    loadContent();
   }, []);
 
   return (

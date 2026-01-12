@@ -36,9 +36,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# netlify
-.netlify
-
 # firebase
 .firebase/
 firebase-debug.log

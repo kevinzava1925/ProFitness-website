@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
-import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type AmenityItem = {
   id: string;
@@ -18,22 +17,44 @@ export default function AmenitiesPage() {
   const [amenities, setAmenities] = useState<AmenityItem[]>([]);
 
   useEffect(() => {
-    const loadedAmenities = localStorage.getItem("amenities");
-    if (loadedAmenities) {
-      setAmenities(JSON.parse(loadedAmenities));
-    } else {
-      // Default amenities
-      const defaultAmenities = [
-        { id: '1', name: 'Locker Rooms', image: DEFAULT_IMAGES.amenities.locker, description: 'Spacious locker rooms with showers and changing facilities' },
-        { id: '2', name: 'Cardio Equipment', image: DEFAULT_IMAGES.amenities.cardio, description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
-        { id: '3', name: 'Free Weights', image: DEFAULT_IMAGES.amenities.weights, description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
-        { id: '4', name: 'Group Classes', image: DEFAULT_IMAGES.amenities.classes, description: 'Multiple group fitness studios for various classes' },
-        { id: '5', name: 'Personal Training', image: DEFAULT_IMAGES.amenities.training, description: 'Private training areas with certified personal trainers' },
-        { id: '6', name: 'Sauna & Steam Room', image: DEFAULT_IMAGES.amenities.sauna, description: 'Relaxation facilities for post-workout recovery' }
-      ];
-      setAmenities(defaultAmenities);
-      localStorage.setItem("amenities", JSON.stringify(defaultAmenities));
-    }
+    const loadContent = async () => {
+      try {
+        // Load from API (Supabase) with cache busting
+        const response = await fetch(`/api/content?type=amenities&_=${Date.now()}`);
+        if (response.ok) {
+          const apiAmenities = await response.json();
+          if (Array.isArray(apiAmenities) && apiAmenities.length > 0) {
+            setAmenities(apiAmenities);
+            return; // Successfully loaded from API
+          }
+        }
+        
+        // Fallback to defaults if API fails or has no data
+        const defaultAmenities = [
+          { id: '1', name: 'Locker Rooms', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Spacious locker rooms with showers and changing facilities' },
+          { id: '2', name: 'Cardio Equipment', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
+          { id: '3', name: 'Free Weights', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
+          { id: '4', name: 'Group Classes', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Multiple group fitness studios for various classes' },
+          { id: '5', name: 'Personal Training', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Private training areas with certified personal trainers' },
+          { id: '6', name: 'Sauna & Steam Room', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Relaxation facilities for post-workout recovery' }
+        ];
+        setAmenities(defaultAmenities);
+      } catch (error) {
+        console.error('Error loading amenities:', error);
+        // Use defaults on error
+        const defaultAmenities = [
+          { id: '1', name: 'Locker Rooms', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Spacious locker rooms with showers and changing facilities' },
+          { id: '2', name: 'Cardio Equipment', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
+          { id: '3', name: 'Free Weights', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
+          { id: '4', name: 'Group Classes', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Multiple group fitness studios for various classes' },
+          { id: '5', name: 'Personal Training', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Private training areas with certified personal trainers' },
+          { id: '6', name: 'Sauna & Steam Room', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Relaxation facilities for post-workout recovery' }
+        ];
+        setAmenities(defaultAmenities);
+      }
+    };
+
+    loadContent();
   }, []);
 
   return (
@@ -45,7 +66,7 @@ export default function AmenitiesPage() {
         <section className="relative h-[40vh] sm:h-[50vh] flex items-center justify-center bg-black overflow-hidden">
           <div className="absolute inset-0 z-0">
             <Image
-              src={DEFAULT_IMAGES.hero}
+              src="https://ext.same-assets.com/443545936/3789989498.webp"
               alt="Gym Amenities"
               fill
               className="object-cover opacity-60"

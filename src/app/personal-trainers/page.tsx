@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
-import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type Trainer = {
   id: string;
@@ -23,78 +22,56 @@ export default function PersonalTrainersPage() {
   const [trainers, setTrainers] = useState<Trainer[]>([]);
 
   useEffect(() => {
-    const loadTrainers = async () => {
-      try {
-        // Always try to load from API first (Supabase) - add cache busting to ensure fresh data
-        const response = await fetch('/api/content?type=trainers&' + new Date().getTime());
-        if (response.ok) {
-          const apiTrainers = await response.json();
-          
-          // Set trainers from API if available
-          if (Array.isArray(apiTrainers) && apiTrainers.length > 0) {
-            setTrainers(apiTrainers);
-            return; // Successfully loaded from API
-          }
-        } else {
-          console.error('API response not OK:', response.status, response.statusText);
+    const loadedTrainers = localStorage.getItem("trainers");
+    if (loadedTrainers) {
+      setTrainers(JSON.parse(loadedTrainers));
+    } else {
+      // Default trainers
+      const defaultTrainers = [
+        { 
+          id: '1', 
+          name: 'John Smith', 
+          image: 'https://ext.same-assets.com/443545936/1729744263.webp', 
+          specialty: 'Strength Training',
+          bio: 'With over 10 years of experience in strength training and bodybuilding, John helps clients build muscle and achieve their fitness goals.',
+          instagramUrl: '#',
+          facebookUrl: '#',
+          twitterUrl: '#'
+        },
+        { 
+          id: '2', 
+          name: 'Sarah Johnson', 
+          image: 'https://ext.same-assets.com/443545936/691732246.webp', 
+          specialty: 'Yoga & Flexibility',
+          bio: 'Certified yoga instructor specializing in flexibility, mobility, and mindfulness practices for overall wellness.',
+          instagramUrl: '#',
+          facebookUrl: '#',
+          linkedinUrl: '#'
+        },
+        { 
+          id: '3', 
+          name: 'Mike Chen', 
+          image: 'https://ext.same-assets.com/443545936/1129713061.webp', 
+          specialty: 'HIIT & Cardio',
+          bio: 'Expert in high-intensity interval training and cardiovascular fitness, helping clients burn fat and improve endurance.',
+          instagramUrl: '#',
+          twitterUrl: '#',
+          linkedinUrl: '#'
+        },
+        { 
+          id: '4', 
+          name: 'Emma Wilson', 
+          image: 'https://ext.same-assets.com/443545936/1537262654.webp', 
+          specialty: 'Nutrition & Wellness',
+          bio: 'Registered dietitian and wellness coach specializing in nutrition planning and lifestyle optimization.',
+          instagramUrl: '#',
+          facebookUrl: '#',
+          linkedinUrl: '#'
         }
-      } catch (error) {
-        console.error('Error loading from API:', error);
-      }
-
-      // Fallback to localStorage if API fails
-      const loadedTrainers = localStorage.getItem("trainers");
-      if (loadedTrainers) {
-        setTrainers(JSON.parse(loadedTrainers));
-      } else {
-        // Default trainers
-        const defaultTrainers = [
-          { 
-            id: '1', 
-            name: 'John Smith', 
-            image: DEFAULT_IMAGES.trainers.trainer1, 
-            specialty: 'Strength Training',
-            bio: 'With over 10 years of experience in strength training and bodybuilding, John helps clients build muscle and achieve their fitness goals.',
-            instagramUrl: '#',
-            facebookUrl: '#',
-            twitterUrl: '#'
-          },
-          { 
-            id: '2', 
-            name: 'Sarah Johnson', 
-            image: DEFAULT_IMAGES.trainers.trainer2, 
-            specialty: 'Yoga & Flexibility',
-            bio: 'Certified yoga instructor specializing in flexibility, mobility, and mindfulness practices for overall wellness.',
-            instagramUrl: '#',
-            facebookUrl: '#',
-            linkedinUrl: '#'
-          },
-          { 
-            id: '3', 
-            name: 'Mike Chen', 
-            image: DEFAULT_IMAGES.trainers.trainer3, 
-            specialty: 'HIIT & Cardio',
-            bio: 'Expert in high-intensity interval training and cardiovascular fitness, helping clients burn fat and improve endurance.',
-            instagramUrl: '#',
-            twitterUrl: '#',
-            linkedinUrl: '#'
-          },
-          { 
-            id: '4', 
-            name: 'Emma Wilson', 
-            image: DEFAULT_IMAGES.trainers.trainer4, 
-            specialty: 'Nutrition & Wellness',
-            bio: 'Registered dietitian and wellness coach specializing in nutrition planning and lifestyle optimization.',
-            instagramUrl: '#',
-            facebookUrl: '#',
-            linkedinUrl: '#'
-          }
-        ];
-        setTrainers(defaultTrainers);
-      }
-    };
-
-    loadTrainers();
+      ];
+      setTrainers(defaultTrainers);
+      localStorage.setItem("trainers", JSON.stringify(defaultTrainers));
+    }
   }, []);
 
   return (
@@ -106,7 +83,7 @@ export default function PersonalTrainersPage() {
         <section className="relative h-[40vh] sm:h-[50vh] flex items-center justify-center bg-black overflow-hidden">
           <div className="absolute inset-0 z-0">
             <Image
-              src={DEFAULT_IMAGES.hero}
+              src="https://ext.same-assets.com/443545936/3789989498.webp"
               alt="Personal Trainers"
               fill
               className="object-cover opacity-60"
@@ -153,7 +130,7 @@ export default function PersonalTrainersPage() {
                       {trainer.instagramUrl && (
                         <a href={trainer.instagramUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
                           <Image
-                            src={DEFAULT_IMAGES.instagram}
+                            src="https://ext.same-assets.com/443545936/2173459103.svg"
                             alt="Instagram"
                             width={24}
                             height={24}
@@ -163,7 +140,7 @@ export default function PersonalTrainersPage() {
                       {trainer.facebookUrl && (
                         <a href={trainer.facebookUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
                           <Image
-                            src={DEFAULT_IMAGES.facebook}
+                            src="https://ext.same-assets.com/443545936/3615542385.svg"
                             alt="Facebook"
                             width={24}
                             height={24}

@@ -4,9 +4,6 @@ import cloudinary from '@/utils/cloudinary';
 export const maxDuration = 60; // 60 seconds max execution time for large videos
 export const runtime = 'nodejs';
 
-// Disable body parsing limit - we'll handle it manually with FormData
-export const dynamic = 'force-dynamic';
-
 export async function POST(req) {
   try {
     // Check if Cloudinary is configured
@@ -27,31 +24,6 @@ export async function POST(req) {
 
     if (!file) {
       return Response.json({ error: 'No file provided' }, { status: 400 });
-    }
-
-    // Check for unsupported file formats
-    const fileName = file.name.toLowerCase();
-    const fileExtension = fileName.split('.').pop();
-    const unsupportedFormats = ['heic', 'heif', 'raw', 'cr2', 'nef', 'orf', 'sr2'];
-    
-    if (unsupportedFormats.includes(fileExtension || '')) {
-      return Response.json({ 
-        error: 'Unsupported file format',
-        message: `HEIC and RAW formats are not supported. Please convert to JPG, PNG, or WEBP.`,
-        fileExtension: fileExtension
-      }, { status: 400 });
-    }
-
-    // Validate file type
-    const validImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-    const validVideoTypes = ['video/mp4', 'video/webm', 'video/ogg', 'video/quicktime'];
-    
-    if (!validImageTypes.includes(file.type) && !validVideoTypes.includes(file.type) && !file.type.startsWith('image/') && !file.type.startsWith('video/')) {
-      return Response.json({ 
-        error: 'Invalid file type',
-        message: 'Please upload a valid image (JPG, PNG, GIF, WEBP, SVG) or video (MP4, WebM) file.',
-        fileType: file.type
-      }, { status: 400 });
     }
 
     // Determine resource type
