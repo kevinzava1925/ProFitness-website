@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/utils/supabase';
 
+// Type for content items from Supabase
+interface ContentRow {
+  id: string;
+  type: string;
+  data: Record<string, unknown>;
+  created_at?: string;
+}
+
 // GET - Fetch all content or specific content type
 export async function GET(request: NextRequest) {
   try {
@@ -52,8 +60,8 @@ export async function GET(request: NextRequest) {
       }
 
       // Group by type
-      const grouped: Record<string, unknown> = {};
-      data.forEach(item => {
+      const grouped: Record<string, unknown[] | Record<string, unknown>> = {};
+      data.forEach((item: ContentRow) => {
         // For single objects (hero, footer), store as object, not array
         if (item.type === 'hero' || item.type === 'footer') {
           grouped[item.type] = {
@@ -65,7 +73,8 @@ export async function GET(request: NextRequest) {
           if (!grouped[item.type]) {
             grouped[item.type] = [];
           }
-          grouped[item.type].push({
+          // Type assertion: we know this is an array because of the if check above
+          (grouped[item.type] as unknown[]).push({
             ...item.data,
             id: item.id,
           });
