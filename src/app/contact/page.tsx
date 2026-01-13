@@ -13,12 +13,32 @@ export default function ContactPage() {
     subject: '',
     message: ''
   });
+  const [submitting, setSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In production, this would send the form data to a backend
-    alert('Thank you for your message! We will get back to you soon.');
-    setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+    setSubmitting(true);
+
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Failed to send message");
+      }
+
+      alert('Thank you for your message! We will get back to you soon.');
+      setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+    } catch (error) {
+      console.error("Contact form error:", error);
+      alert('Sorry, there was a problem sending your message. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -133,9 +153,10 @@ export default function ContactPage() {
 
                   <button
                     type="submit"
-                    className="w-full bg-black text-white py-3 font-bold uppercase hover:bg-gray-800 transition-colors"
+                    disabled={submitting}
+                    className="w-full bg-black text-white py-3 font-bold uppercase hover:bg-gray-800 transition-colors disabled:opacity-60"
                   >
-                    Send Message
+                    {submitting ? 'Sending...' : 'Send Message'}
                   </button>
                 </form>
               </div>
@@ -167,8 +188,8 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-bold uppercase mb-2 text-sm">Email</h3>
                       <p className="text-gray-700">
-                        <a href="mailto:info@profitness.com" className="hover:text-black">
-                          info@profitness.com
+                        <a href="mailto:borrowdale@pro-fitness.co.zw" className="hover:text-black">
+                          borrowdale@pro-fitness.co.zw
                         </a>
                       </p>
                     </div>

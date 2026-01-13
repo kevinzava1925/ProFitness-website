@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Navigation from "../../components/Navigation";
 import Footer from "../../components/Footer";
+import { DEFAULT_CONTENT } from "@/config/defaultContent";
 
 type EventItem = {
   id: string;
@@ -22,37 +23,30 @@ export default function EventDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadedEvents = localStorage.getItem("events");
-    if (loadedEvents) {
-      const events = JSON.parse(loadedEvents);
-      const foundEvent = events.find((e: EventItem) => e.id === eventId);
-      if (foundEvent) {
-        setEvent(foundEvent);
-      } else {
-        // Fallback to default events if not found
-        const defaultEvents = [
-          { id: '1', name: 'Fitness Workshop', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'Every Saturday', description: 'Join our weekly fitness workshop to learn new techniques and improve your form.' },
-          { id: '2', name: 'Member Appreciation Day', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: 'First Sunday of Each Month', description: 'Special events and activities to celebrate our amazing members.' },
-          { id: '3', name: 'Nutrition Seminar', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: 'Monthly', description: 'Learn about proper nutrition and meal planning for your fitness goals.' }
-        ];
-        const fallbackEvent = defaultEvents.find(e => e.id === eventId);
-        if (fallbackEvent) {
-          setEvent(fallbackEvent);
+    const loadEvent = async () => {
+      try {
+        const response = await fetch("/api/content?type=events&" + new Date().getTime());
+        if (response.ok) {
+          const data = await response.json();
+          const list: EventItem[] = Array.isArray(data) && data.length ? data : DEFAULT_CONTENT.events;
+          const foundEvent = list.find((e) => e.id === eventId);
+          if (foundEvent) {
+            setEvent(foundEvent);
+          }
+          setLoading(false);
+          return;
         }
+        console.error("Failed to load events from API:", response.statusText);
+      } catch (error) {
+        console.error("Error loading event:", error);
       }
-    } else {
-      // Use default events
-      const defaultEvents = [
-        { id: '1', name: 'Fitness Workshop', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'Every Saturday', description: 'Join our weekly fitness workshop to learn new techniques and improve your form.' },
-        { id: '2', name: 'Member Appreciation Day', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: 'First Sunday of Each Month', description: 'Special events and activities to celebrate our amazing members.' },
-        { id: '3', name: 'Nutrition Seminar', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: 'Monthly', description: 'Learn about proper nutrition and meal planning for your fitness goals.' }
-      ];
-      const fallbackEvent = defaultEvents.find(e => e.id === eventId);
-      if (fallbackEvent) {
-        setEvent(fallbackEvent);
-      }
-    }
-    setLoading(false);
+
+      const fallbackEvent = DEFAULT_CONTENT.events.find((e) => e.id === eventId) || null;
+      setEvent(fallbackEvent);
+      setLoading(false);
+    };
+
+    loadEvent();
   }, [eventId]);
 
   if (loading) {

@@ -22,15 +22,15 @@ export default function Navigation() {
           </Link>
 
           <div className="hidden md:flex items-center space-x-4 lg:space-x-8 text-xs lg:text-sm font-bold">
-            <Link href="/help" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Help</Link>
+            <Link href="/about" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">About Us</Link>
+            <Link href="/amenities" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Amenities</Link>
             <Link href="/classes-schedule" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Classes</Link>
             <Link href="/events" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Events</Link>
             <Link href="/pricing" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Pricing</Link>
-            <Link href="/about" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">About Us</Link>
-            <Link href="/amenities" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Amenities</Link>
             <Link href="/shop" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Shop</Link>
             <Link href="/register" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Register</Link>
             <Link href="/member-area" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Member Area</Link>
+            <Link href="/help" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Help</Link>
           </div>
 
           <button
@@ -52,15 +52,15 @@ export default function Navigation() {
       {mobileMenuOpen && (
         <div className="md:hidden bg-black border-t border-gray-800">
           <div className="px-4 pt-2 pb-4 space-y-2">
-            <Link href="/help" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Help</Link>
+            <Link href="/about" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
+            <Link href="/amenities" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Amenities</Link>
             <Link href="/classes-schedule" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Classes</Link>
             <Link href="/events" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Events</Link>
             <Link href="/pricing" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
-            <Link href="/about" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>About Us</Link>
-            <Link href="/amenities" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Amenities</Link>
             <Link href="/shop" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Shop</Link>
             <Link href="/register" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Register</Link>
             <Link href="/member-area" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Member Area</Link>
+            <Link href="/help" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Help</Link>
           </div>
         </div>
       )}

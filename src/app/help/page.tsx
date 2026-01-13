@@ -90,7 +90,7 @@ export default function HelpPage() {
                 Contact Us
               </a>
               <a
-                href="mailto:support@profitness.com"
+                href="mailto:borrowdale@pro-fitness.co.zw"
                 className="bg-white text-black px-6 sm:px-8 py-2.5 sm:py-3 font-bold text-xs sm:text-sm uppercase hover:bg-gray-200 transition-colors"
               >
                 Email Support

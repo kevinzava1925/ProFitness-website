@@ -6,6 +6,7 @@ const JWT_EXPIRES_IN = '7d'; // Token expires in 7 days
 export interface TokenPayload {
   userId: string;
   email: string;
+  isAdmin?: boolean;
 }
 
 export function generateToken(payload: TokenPayload): string {

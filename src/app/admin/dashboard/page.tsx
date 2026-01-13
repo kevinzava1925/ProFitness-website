@@ -67,9 +67,29 @@ type HeroMedia = {
   type: 'image' | 'video';
 };
 
+type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  subject: string;
+  message: string;
+  created_at?: string;
+};
+
+type ClassSchedule = {
+  id: string;
+  name: string;
+  instructor: string;
+  time: string;
+  day: string;
+  duration: string;
+  level: string;
+};
+
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'homepage' | 'classes' | 'events' | 'shop' | 'partners' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities'>('homepage');
+  const [activeTab, setActiveTab] = useState<'homepage' | 'classes' | 'events' | 'shop' | 'partners' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities' | 'messages' | 'schedule'>('homepage');
   const [classes, setClasses] = useState<ContentItem[]>([]);
   const [events, setEvents] = useState<ContentItem[]>([]);
   const [shopItems, setShopItems] = useState<ContentItem[]>([]);
@@ -80,12 +100,15 @@ export default function AdminDashboard() {
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [amenities, setAmenities] = useState<ContentItem[]>([]);
   const [heroMedia, setHeroMedia] = useState<HeroMedia | null>(null);
+  const [contactMessages, setContactMessages] = useState<ContactMessage[]>([]);
+  const [classSchedule, setClassSchedule] = useState<ClassSchedule[]>([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editingItem, setEditingItem] = useState<ContentItem | null>(null);
   const [editingPlan, setEditingPlan] = useState<PricingPlan | null>(null);
   const [editingFooter, setEditingFooter] = useState(false);
   const [editingCollaboration, setEditingCollaboration] = useState<CollaborationItem | null>(null);
   const [editingTrainer, setEditingTrainer] = useState<Trainer | null>(null);
+  const [editingScheduleItem, setEditingScheduleItem] = useState<ClassSchedule | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadField, setUploadField] = useState<string | null>(null);
 
@@ -235,10 +258,12 @@ export default function AdminDashboard() {
   // Helper function to save content to Supabase API - NO localStorage fallback for syncing
   const saveContentToAPI = async (type: string, data: ContentItem[] | PricingPlan[] | FooterData | HeroMedia | CollaborationItem[] | Trainer[]) => {
     try {
+      const token = localStorage.getItem("adminToken");
       const response = await fetch('/api/content', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          ...(token && { 'Authorization': `Bearer ${token}` }),
         },
         body: JSON.stringify({ type, data }),
       });
@@ -266,10 +291,32 @@ export default function AdminDashboard() {
 
   // Check authentication
   useEffect(() => {
-    const isAuth = localStorage.getItem("adminAuth");
-    if (!isAuth) {
-      router.push("/admin");
-    }
+    const checkAuth = async () => {
+      const token = localStorage.getItem("adminToken");
+      if (!token) {
+        router.push("/admin");
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/auth/admin/verify", {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          localStorage.removeItem("adminToken");
+          router.push("/admin");
+        }
+      } catch (error) {
+        console.error("Auth check error:", error);
+        localStorage.removeItem("adminToken");
+        router.push("/admin");
+      }
+    };
+
+    checkAuth();
   }, [router]);
 
   // Load data from API (with localStorage fallback)
@@ -293,11 +340,30 @@ export default function AdminDashboard() {
           if (allContent.trainers && Array.isArray(allContent.trainers)) setTrainers(allContent.trainers);
           if (allContent.amenities && Array.isArray(allContent.amenities)) setAmenities(allContent.amenities);
           if (allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url) setHeroMedia(allContent.hero);
+          if (allContent.schedule && Array.isArray(allContent.schedule)) setClassSchedule(allContent.schedule);
           
           return; // Successfully loaded from API
         }
       } catch (error) {
         console.error('Error loading from API, falling back to localStorage:', error);
+      }
+
+      // Load contact messages
+      try {
+        const token = localStorage.getItem("adminToken");
+        const messagesResponse = await fetch('/api/contact/messages', {
+          headers: {
+            ...(token && { 'Authorization': `Bearer ${token}` }),
+          },
+        });
+        if (messagesResponse.ok) {
+          const messagesData = await messagesResponse.json();
+          if (messagesData.messages && Array.isArray(messagesData.messages)) {
+            setContactMessages(messagesData.messages);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading contact messages:', error);
       }
 
       // Fallback to localStorage
@@ -465,13 +531,25 @@ export default function AdminDashboard() {
         };
         setHeroMedia(defaultHero);
       }
+
+      const loadedSchedule = localStorage.getItem("classSchedule");
+      if (loadedSchedule) {
+        setClassSchedule(JSON.parse(loadedSchedule));
+      } else {
+        const defaultSchedule: ClassSchedule[] = [
+          { id: '1', name: 'Morning Yoga', instructor: 'Sarah Johnson', time: '07:00', day: 'Monday', duration: '60 min', level: 'All Levels' },
+          { id: '2', name: 'HIIT Training', instructor: 'Mike Chen', time: '08:00', day: 'Monday', duration: '45 min', level: 'Intermediate' },
+          { id: '3', name: 'Strength Training', instructor: 'David Martinez', time: '18:00', day: 'Monday', duration: '60 min', level: 'All Levels' },
+        ];
+        setClassSchedule(defaultSchedule);
+      }
     };
 
     loadContent();
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem("adminAuth");
+    localStorage.removeItem("adminToken");
     router.push("/admin");
   };
 
@@ -789,6 +867,84 @@ export default function AdminDashboard() {
     }
   };
 
+  // Contact Messages handlers
+  const handleDeleteMessage = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this message?')) return;
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(`/api/contact/messages?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+      });
+      if (response.ok) {
+        setContactMessages(contactMessages.filter(m => m.id !== id));
+        alert('Message deleted successfully!');
+      } else {
+        throw new Error('Failed to delete message');
+      }
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      alert('Failed to delete message. Please try again.');
+    }
+  };
+
+  // Class Schedule handlers
+  const handleAddScheduleItem = () => {
+    setEditingScheduleItem({
+      id: Date.now().toString(),
+      name: '',
+      instructor: '',
+      time: '',
+      day: 'Monday',
+      duration: '',
+      level: 'All Levels'
+    });
+    setIsEditing(true);
+  };
+
+  const handleEditScheduleItem = (item: ClassSchedule) => {
+    setEditingScheduleItem(item);
+    setIsEditing(true);
+  };
+
+  const handleSaveScheduleItem = async () => {
+    if (!editingScheduleItem) return;
+    try {
+      const exists = classSchedule.find(s => s.id === editingScheduleItem.id);
+      let newSchedule: ClassSchedule[];
+      
+      if (exists) {
+        newSchedule = classSchedule.map(s => s.id === editingScheduleItem.id ? editingScheduleItem : s);
+      } else {
+        newSchedule = [...classSchedule, editingScheduleItem];
+      }
+
+      setClassSchedule(newSchedule);
+      await saveContentToAPI('schedule', newSchedule);
+      setIsEditing(false);
+      setEditingScheduleItem(null);
+      alert('Schedule item saved successfully!');
+    } catch (error) {
+      console.error('Error saving schedule item:', error);
+      alert('Failed to save schedule item. Please try again.');
+    }
+  };
+
+  const handleDeleteScheduleItem = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this schedule item?')) return;
+    try {
+      const newSchedule = classSchedule.filter(s => s.id !== id);
+      setClassSchedule(newSchedule);
+      await saveContentToAPI('schedule', newSchedule);
+      alert('Schedule item deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting schedule item:', error);
+      alert('Failed to delete schedule item. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
@@ -825,7 +981,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="border-b border-gray-200">
             <nav className="flex -mb-px overflow-x-auto">
-              {(['homepage', 'classes', 'events', 'shop', 'partners', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities'] as const).map((tab) => (
+              {(['homepage', 'classes', 'events', 'shop', 'partners', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities', 'messages', 'schedule'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -1133,6 +1289,108 @@ export default function AdminDashboard() {
                     </div>
                   </div>
                 ))}
+              </div>
+            </>
+          ) : activeTab === 'messages' ? (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold uppercase">Contact Messages</h2>
+                <p className="text-sm text-gray-600">Total: {contactMessages.length} messages</p>
+              </div>
+
+              {contactMessages.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-gray-600 text-lg">No messages yet.</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {contactMessages.map((message) => (
+                    <div key={message.id} className="border border-gray-200 rounded-lg p-6">
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-4 mb-2">
+                            <h3 className="font-bold text-lg">{message.name}</h3>
+                            <span className="text-sm text-gray-500">{message.email}</span>
+                            {message.phone && (
+                              <span className="text-sm text-gray-500">{message.phone}</span>
+                            )}
+                          </div>
+                          <p className="text-sm font-semibold text-profitness-brown mb-2">Subject: {message.subject}</p>
+                          {message.created_at && (
+                            <p className="text-xs text-gray-400">
+                              {new Date(message.created_at).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => handleDeleteMessage(message.id)}
+                          className="bg-red-600 text-white px-4 py-2 text-sm font-bold uppercase hover:bg-red-700 transition-colors"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg p-4">
+                        <p className="text-gray-700 whitespace-pre-wrap">{message.message}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          ) : activeTab === 'schedule' ? (
+            <>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold uppercase">Manage Class Schedule</h2>
+                <button
+                  onClick={handleAddScheduleItem}
+                  className="bg-black text-white px-6 py-2 font-bold text-sm uppercase hover:bg-gray-800 transition-colors"
+                >
+                  Add New
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="border border-gray-300 px-4 py-3 text-left font-bold uppercase">Day</th>
+                      <th className="border border-gray-300 px-4 py-3 text-left font-bold uppercase">Time</th>
+                      <th className="border border-gray-300 px-4 py-3 text-left font-bold uppercase">Class Name</th>
+                      <th className="border border-gray-300 px-4 py-3 text-left font-bold uppercase">Instructor</th>
+                      <th className="border border-gray-300 px-4 py-3 text-left font-bold uppercase">Duration</th>
+                      <th className="border border-gray-300 px-4 py-3 text-left font-bold uppercase">Level</th>
+                      <th className="border border-gray-300 px-4 py-3 text-left font-bold uppercase">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {classSchedule.map((item) => (
+                      <tr key={item.id} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 px-4 py-3">{item.day}</td>
+                        <td className="border border-gray-300 px-4 py-3">{item.time}</td>
+                        <td className="border border-gray-300 px-4 py-3 font-semibold">{item.name}</td>
+                        <td className="border border-gray-300 px-4 py-3">{item.instructor}</td>
+                        <td className="border border-gray-300 px-4 py-3">{item.duration}</td>
+                        <td className="border border-gray-300 px-4 py-3">{item.level}</td>
+                        <td className="border border-gray-300 px-4 py-3">
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditScheduleItem(item)}
+                              className="bg-black text-white px-3 py-1 text-xs font-bold uppercase hover:bg-gray-800 transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() => handleDeleteScheduleItem(item.id)}
+                              className="bg-red-600 text-white px-3 py-1 text-xs font-bold uppercase hover:bg-red-700 transition-colors"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </>
           ) : (
@@ -1831,6 +2089,114 @@ export default function AdminDashboard() {
               </button>
               <button
                 onClick={() => setEditingFooter(false)}
+                className="flex-1 bg-gray-200 text-black px-6 py-3 font-bold uppercase hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal for Class Schedule */}
+      {isEditing && editingScheduleItem && activeTab === 'schedule' && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
+            <h3 className="text-2xl font-bold uppercase mb-6">
+              {editingScheduleItem.id && classSchedule.find(s => s.id === editingScheduleItem.id) ? 'Edit' : 'Add'} Schedule Item
+            </h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">Class Name</label>
+                <input
+                  type="text"
+                  value={editingScheduleItem.name}
+                  onChange={(e) => setEditingScheduleItem({ ...editingScheduleItem, name: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  placeholder="e.g., Morning Yoga"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Day</label>
+                  <select
+                    value={editingScheduleItem.day}
+                    onChange={(e) => setEditingScheduleItem({ ...editingScheduleItem, day: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  >
+                    <option value="Monday">Monday</option>
+                    <option value="Tuesday">Tuesday</option>
+                    <option value="Wednesday">Wednesday</option>
+                    <option value="Thursday">Thursday</option>
+                    <option value="Friday">Friday</option>
+                    <option value="Saturday">Saturday</option>
+                    <option value="Sunday">Sunday</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Time</label>
+                  <input
+                    type="text"
+                    value={editingScheduleItem.time}
+                    onChange={(e) => setEditingScheduleItem({ ...editingScheduleItem, time: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="e.g., 07:00"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Instructor</label>
+                  <input
+                    type="text"
+                    value={editingScheduleItem.instructor}
+                    onChange={(e) => setEditingScheduleItem({ ...editingScheduleItem, instructor: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="e.g., Sarah Johnson"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Duration</label>
+                  <input
+                    type="text"
+                    value={editingScheduleItem.duration}
+                    onChange={(e) => setEditingScheduleItem({ ...editingScheduleItem, duration: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="e.g., 60 min"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Level</label>
+                <select
+                  value={editingScheduleItem.level}
+                  onChange={(e) => setEditingScheduleItem({ ...editingScheduleItem, level: e.target.value })}
+                  className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                >
+                  <option value="All Levels">All Levels</option>
+                  <option value="Beginner">Beginner</option>
+                  <option value="Intermediate">Intermediate</option>
+                  <option value="Advanced">Advanced</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-4 mt-6">
+              <button
+                onClick={handleSaveScheduleItem}
+                className="flex-1 bg-black text-white px-6 py-3 font-bold uppercase hover:bg-gray-800 transition-colors"
+              >
+                Save
+              </button>
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditingScheduleItem(null);
+                }}
                 className="flex-1 bg-gray-200 text-black px-6 py-3 font-bold uppercase hover:bg-gray-300 transition-colors"
               >
                 Cancel

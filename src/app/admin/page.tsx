@@ -10,15 +10,34 @@ export default function AdminLogin() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
 
-    // Simple authentication (in production, this would be proper backend auth)
-    if (email === "admin@profitness.com" && password === "admin123") {
-      localStorage.setItem("adminAuth", "true");
-      router.push("/admin/dashboard");
-    } else {
-      setError("Invalid credentials");
+    try {
+      const response = await fetch("/api/auth/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Invalid credentials");
+        return;
+      }
+
+      // Store token securely
+      if (data.token) {
+        localStorage.setItem("adminToken", data.token);
+        router.push("/admin/dashboard");
+      } else {
+        setError("Authentication failed");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("Network error. Please try again.");
     }
   };
 
@@ -49,7 +68,7 @@ export default function AdminLogin() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-700 text-white rounded focus:outline-none focus:border-white"
-                placeholder="admin@profitness.com"
+                placeholder="admin@pro-fitness.co.zw"
                 required
               />
             </div>
@@ -83,11 +102,6 @@ export default function AdminLogin() {
             </button>
           </form>
 
-          <div className="mt-6 p-4 bg-gray-800 rounded text-sm">
-            <p className="text-gray-400 mb-2">Demo Credentials:</p>
-            <p className="text-white">Email: admin@profitness.com</p>
-            <p className="text-white">Password: admin123</p>
-          </div>
         </div>
       </div>
     </div>

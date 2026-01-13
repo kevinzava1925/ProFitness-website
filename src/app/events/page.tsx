@@ -5,6 +5,7 @@ import Footer from "../components/Footer";
 import Image from "next/image";
 import Link from "next/link";
 import { useState, useEffect } from "react";
+import { DEFAULT_CONTENT } from "@/config/defaultContent";
 
 type EventItem = {
   id: string;
@@ -18,17 +19,23 @@ export default function EventsPage() {
   const [events, setEvents] = useState<EventItem[]>([]);
 
   useEffect(() => {
-    const loadedEvents = localStorage.getItem("events");
-    if (loadedEvents) {
-      setEvents(JSON.parse(loadedEvents));
-    } else {
-      const defaultEvents = [
-        { id: '1', name: 'Fitness Workshop', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'Every Saturday', description: 'Join our weekly fitness workshop to learn new techniques and improve your form.' },
-        { id: '2', name: 'Member Appreciation Day', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: 'First Sunday of Each Month', description: 'Special events and activities to celebrate our amazing members.' },
-        { id: '3', name: 'Nutrition Seminar', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: 'Monthly', description: 'Learn about proper nutrition and meal planning for your fitness goals.' }
-      ];
-      setEvents(defaultEvents);
-    }
+    const loadEvents = async () => {
+      try {
+        const response = await fetch("/api/content?type=events&" + new Date().getTime());
+        if (response.ok) {
+          const data = await response.json();
+          setEvents(Array.isArray(data) && data.length ? data : DEFAULT_CONTENT.events);
+          return;
+        }
+        console.error("Failed to load events from API:", response.statusText);
+      } catch (error) {
+        console.error("Error loading events:", error);
+      }
+
+      setEvents(DEFAULT_CONTENT.events);
+    };
+
+    loadEvents();
   }, []);
 
   return (

@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import { DEFAULT_CONTENT } from "@/config/defaultContent";
 
 type ClassItem = {
   id: string;
@@ -21,21 +22,23 @@ export default function ClassesPage() {
   const [classes, setClasses] = useState<ClassItem[]>([]);
 
   useEffect(() => {
-    const loadedClasses = localStorage.getItem("classes");
-    if (loadedClasses) {
-      setClasses(JSON.parse(loadedClasses));
-    } else {
-      // Default classes
-      const defaultClasses = [
-        { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
-        { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
-        { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
-        { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
-        { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
-        { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
-      ];
-      setClasses(defaultClasses);
-    }
+    const loadClasses = async () => {
+      try {
+        const response = await fetch("/api/content?type=classes&" + new Date().getTime());
+        if (response.ok) {
+          const data = await response.json();
+          setClasses(Array.isArray(data) && data.length ? data : DEFAULT_CONTENT.classes);
+          return;
+        }
+        console.error("Failed to load classes from API:", response.statusText);
+      } catch (error) {
+        console.error("Error loading classes:", error);
+      }
+
+      setClasses(DEFAULT_CONTENT.classes);
+    };
+
+    loadClasses();
   }, []);
 
   return (

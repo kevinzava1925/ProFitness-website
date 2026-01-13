@@ -1,20 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 import { createServerClient } from '@/utils/supabase';
+import { contactFormSchema } from '@/utils/validation';
+import { rateLimit, getClientIP } from '@/utils/rateLimit';
+import DOMPurify from 'isomorphic-dompurify';
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, email, phone, subject, message } = await request.json();
-
-    // Validate required fields
-    if (!name || !email || !subject || !message) {
+    // Rate limiting: 10 requests per 15 minutes per IP
+    const clientIP = getClientIP(request);
+    if (!rateLimit(`contact-form-${clientIP}`, 10, 15 * 60 * 1000)) {
       return NextResponse.json(
-        { error: 'Name, email, subject, and message are required' },
+        { error: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
+    const body = await request.json();
+    
+    // Validate input with Zod
+    const validationResult = contactFormSchema.safeParse(body);
+    if (!validationResult.success) {
+      return NextResponse.json(
+        { 
+          error: 'Validation failed',
+          details: validationResult.error.errors.map(e => ({
+            field: e.path.join('.'),
+            message: e.message,
+          })),
+        },
         { status: 400 }
       );
     }
+
+    const { name, email, phone, subject, message } = validationResult.data;
 
     // Save to Supabase
     const supabase = createServerClient();
@@ -63,12 +84,12 @@ export async function POST(request: NextRequest) {
           subject: `Contact Form: ${subject}`,
           html: `
             <h2>New Contact Form Submission</h2>
-            <p><strong>Name:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
-            <p><strong>Subject:</strong> ${subject}</p>
+            <p><strong>Name:</strong> ${DOMPurify.sanitize(name)}</p>
+            <p><strong>Email:</strong> ${DOMPurify.sanitize(email)}</p>
+            <p><strong>Phone:</strong> ${phone ? DOMPurify.sanitize(phone) : 'Not provided'}</p>
+            <p><strong>Subject:</strong> ${DOMPurify.sanitize(subject)}</p>
             <p><strong>Message:</strong></p>
-            <p>${message.replace(/\n/g, '<br>')}</p>
+            <p>${DOMPurify.sanitize(message.replace(/\n/g, '<br>'))}</p>
             <hr>
             <p style="color: #666; font-size: 12px;">This message was submitted through the ProFitness contact form.</p>
           `,

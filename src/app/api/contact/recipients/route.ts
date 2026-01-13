@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/utils/supabase';
+import { requireAdmin } from '@/utils/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    // Require admin authentication
+    await requireAdmin(request);
+    
     const supabase = createServerClient();
     
     const { data, error } = await supabase
@@ -30,11 +34,23 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require admin authentication
+    await requireAdmin(request);
+    
     const { email } = await request.json();
 
     if (!email || !email.includes('@')) {
       return NextResponse.json(
         { error: 'Valid email is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: 'Invalid email format' },
         { status: 400 }
       );
     }
@@ -72,12 +88,24 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Require admin authentication
+    await requireAdmin(request);
+    
     const { searchParams } = new URL(request.url);
     const recipientId = searchParams.get('id');
 
     if (!recipientId) {
       return NextResponse.json(
         { error: 'Recipient ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate recipientId format (UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(recipientId)) {
+      return NextResponse.json(
+        { error: 'Invalid recipient ID format' },
         { status: 400 }
       );
     }
@@ -108,11 +136,23 @@ export async function DELETE(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    // Require admin authentication
+    await requireAdmin(request);
+    
     const { id, is_active } = await request.json();
 
     if (!id || typeof is_active !== 'boolean') {
       return NextResponse.json(
         { error: 'ID and is_active status are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate id format (UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(id)) {
+      return NextResponse.json(
+        { error: 'Invalid ID format' },
         { status: 400 }
       );
     }

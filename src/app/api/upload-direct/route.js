@@ -4,8 +4,30 @@ import cloudinary from '@/utils/cloudinary';
 export const maxDuration = 60; // 60 seconds max execution time for large videos
 export const runtime = 'nodejs';
 
+import { requireAdmin } from '@/utils/auth';
+import { rateLimit, getClientIP } from '@/utils/rateLimit';
+
 export async function POST(req) {
   try {
+    // Require admin authentication
+    try {
+      await requireAdmin(req);
+    } catch (authError) {
+      return Response.json(
+        { error: 'Unauthorized. Admin access required.' },
+        { status: 401 }
+      );
+    }
+
+    // Rate limiting
+    const clientIP = getClientIP(req);
+    if (!rateLimit(`upload-${clientIP}`, 20, 60 * 60 * 1000)) { // 20 uploads per hour
+      return Response.json(
+        { error: 'Too many uploads. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     // Check if Cloudinary is configured
     if (!process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET || !process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) {
       console.error('Cloudinary configuration missing:', {
@@ -24,6 +46,32 @@ export async function POST(req) {
 
     if (!file) {
       return Response.json({ error: 'No file provided' }, { status: 400 });
+    }
+
+    // Validate file type
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'];
+    const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+    const allowedTypes = [...allowedImageTypes, ...allowedVideoTypes];
+    
+    if (!allowedTypes.includes(file.type)) {
+      return Response.json(
+        { error: 'File type not allowed. Allowed types: JPEG, PNG, WEBP, GIF, MP4, WEBM, MOV' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file size
+    const maxImageSize = 20 * 1024 * 1024; // 20MB
+    const maxVideoSize = 200 * 1024 * 1024; // 200MB
+    const isImage = file.type.startsWith('image/');
+    const maxSize = isImage ? maxImageSize : maxVideoSize;
+    
+    if (file.size > maxSize) {
+      const maxSizeMB = isImage ? 20 : 200;
+      return Response.json(
+        { error: `File size exceeds limit. Maximum size: ${maxSizeMB}MB` },
+        { status: 400 }
+      );
     }
 
     // Determine resource type
@@ -69,7 +117,7 @@ export async function POST(req) {
       error: 'Upload failed', 
       message: error.message || 'Unknown error',
       errorType: error.constructor.name,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      details: process.env.NODE_ENV === 'development' ? error.stack : 'An error occurred during upload'
     }, { status: 500 });
   }
 }

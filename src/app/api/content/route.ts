@@ -92,9 +92,20 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Save content
+// POST - Save content (requires admin authentication)
 export async function POST(request: NextRequest) {
   try {
+    // Require admin authentication
+    const { requireAdmin } = await import('@/utils/auth');
+    try {
+      await requireAdmin(request);
+    } catch (authError) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Admin access required.' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { type, data: contentData } = body;
 

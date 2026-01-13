@@ -1,93 +1,66 @@
-// Client-side authentication utilities
+import { NextRequest } from 'next/server';
+import { verifyToken } from './jwt';
 
-export interface User {
-  id: string;
+export interface AuthUser {
+  userId: string;
   email: string;
-  name?: string;
-  membershipType: 'Basic' | 'Premium' | 'Elite';
-  membershipStatus: 'Active' | 'Inactive' | 'Expired';
-  createdAt: string;
-  upcomingClasses?: number;
-  personalTrainingSessions?: number;
+  isAdmin?: boolean;
 }
 
-const TOKEN_KEY = 'profitness_auth_token';
-const USER_KEY = 'profitness_user';
-
-// Save token and user to localStorage
-export function saveAuth(token: string, user: User): void {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(TOKEN_KEY, token);
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-  }
-}
-
-// Get token from localStorage
-export function getToken(): string | null {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem(TOKEN_KEY);
-  }
-  return null;
-}
-
-// Get user from localStorage
-export function getUser(): User | null {
-  if (typeof window !== 'undefined') {
-    const userStr = localStorage.getItem(USER_KEY);
-    if (userStr) {
-      try {
-        return JSON.parse(userStr);
-      } catch (error) {
-        return null;
-      }
+/**
+ * Verify authentication token from request headers
+ */
+export async function verifyAuth(request: NextRequest): Promise<AuthUser | null> {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return null;
     }
+
+    const token = authHeader.substring(7);
+    const decoded = verifyToken(token);
+    
+    if (!decoded) {
+      return null;
+    }
+
+    return {
+      userId: decoded.userId || '',
+      email: decoded.email || '',
+      isAdmin: decoded.isAdmin || false,
+    };
+  } catch (error) {
+    console.error('Auth verification error:', error);
+    return null;
   }
-  return null;
 }
 
-// Clear auth data
-export function clearAuth(): void {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-  }
-}
-
-// Check if user is authenticated
-export function isAuthenticated(): boolean {
-  return getToken() !== null && getUser() !== null;
-}
-
-// Make authenticated API request
-export async function authenticatedFetch(url: string, options: RequestInit = {}): Promise<Response> {
-  const token = getToken();
+/**
+ * Check if user is authenticated (for API routes)
+ */
+export async function requireAuth(request: NextRequest): Promise<AuthUser> {
+  const user = await verifyAuth(request);
   
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
-
-  // Merge existing headers
-  if (options.headers) {
-    if (options.headers instanceof Headers) {
-      options.headers.forEach((value, key) => {
-        headers[key] = value;
-      });
-    } else if (Array.isArray(options.headers)) {
-      options.headers.forEach(([key, value]) => {
-        headers[key] = value;
-      });
-    } else {
-      Object.assign(headers, options.headers);
-    }
+  if (!user) {
+    throw new Error('Unauthorized');
   }
-
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  return fetch(url, {
-    ...options,
-    headers,
-  });
+  
+  return user;
 }
 
+/**
+ * Check if user is admin (for API routes)
+ */
+export async function requireAdmin(request: NextRequest): Promise<AuthUser> {
+  const user = await requireAuth(request);
+  
+  // Check if user is admin from token
+  // For now, we'll check if email matches admin email or if isAdmin flag is set
+  const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@pro-fitness.co.zw';
+  
+  if (!user.isAdmin && user.email !== ADMIN_EMAIL) {
+    throw new Error('Forbidden: Admin access required');
+  }
+  
+  return user;
+}

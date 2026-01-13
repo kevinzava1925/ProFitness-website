@@ -5,6 +5,8 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import Navigation from "./components/Navigation";
 import Footer from "./components/Footer";
+import { DEFAULT_CONTENT } from "@/config/defaultContent";
+import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 type ContentItem = {
   id: string;
@@ -48,182 +50,34 @@ export default function Home() {
 
   // Load content from API (Supabase) - no localStorage fallback for syncing
   useEffect(() => {
+    const applyContent = (allContent: any) => {
+      setClasses(allContent?.classes?.length ? allContent.classes : DEFAULT_CONTENT.classes);
+      setEvents(allContent?.events?.length ? allContent.events : DEFAULT_CONTENT.events);
+      setShopItems(allContent?.shop?.length ? allContent.shop : DEFAULT_CONTENT.shop);
+      setPartners(allContent?.partners?.length ? allContent.partners : DEFAULT_CONTENT.partners);
+      setTrainers(allContent?.trainers?.length ? allContent.trainers.slice(0, 4) : DEFAULT_CONTENT.trainers);
+      setAmenities(allContent?.amenities?.length ? allContent.amenities : DEFAULT_CONTENT.amenities);
+      setHeroMedia(
+        allContent?.hero && typeof allContent.hero === "object" && allContent.hero.url
+          ? allContent.hero
+          : DEFAULT_CONTENT.hero
+      );
+    };
+
     const loadContent = async () => {
       try {
-        // Always try to load from API first (Supabase) - add cache busting to ensure fresh data
-        const response = await fetch('/api/content?' + new Date().getTime());
+        const response = await fetch("/api/content?" + new Date().getTime());
         if (response.ok) {
           const allContent = await response.json();
-          
-          // Set each content type
-          if (allContent.classes && Array.isArray(allContent.classes) && allContent.classes.length > 0) {
-            setClasses(allContent.classes);
-          }
-          if (allContent.events && Array.isArray(allContent.events) && allContent.events.length > 0) {
-            setEvents(allContent.events);
-          }
-          if (allContent.shop && Array.isArray(allContent.shop) && allContent.shop.length > 0) {
-            setShopItems(allContent.shop);
-          }
-          if (allContent.partners && Array.isArray(allContent.partners) && allContent.partners.length > 0) {
-            setPartners(allContent.partners);
-          }
-          if (allContent.trainers && Array.isArray(allContent.trainers) && allContent.trainers.length > 0) {
-            setTrainers(allContent.trainers.slice(0, 4));
-          }
-          if (allContent.amenities && Array.isArray(allContent.amenities) && allContent.amenities.length > 0) {
-            setAmenities(allContent.amenities);
-          }
-          // Hero is a single object, not an array - ALWAYS use API data if available
-          if (allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url) {
-            setHeroMedia(allContent.hero);
-          } else {
-            // Only use default if API doesn't have hero data
-            setHeroMedia({
-              url: "https://ext.same-assets.com/443545936/3789989498.webp",
-              type: "image"
-            });
-          }
-          
-          // Use defaults for missing types
-          if (!allContent.classes || !Array.isArray(allContent.classes) || allContent.classes.length === 0) {
-            const defaultClasses = [
-              { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
-              { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
-              { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
-              { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
-              { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
-              { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
-            ];
-            setClasses(defaultClasses);
-          }
-          
-          return; // Successfully loaded from API
-        } else {
-          console.error('API response not OK:', response.status, response.statusText);
-          // If API fails, use defaults (not localStorage)
-          setHeroMedia({
-            url: "https://ext.same-assets.com/443545936/3789989498.webp",
-            type: "image"
-          });
+          applyContent(allContent);
+          return;
         }
+        console.error("API response not OK:", response.status, response.statusText);
       } catch (error) {
-        console.error('Error loading from API:', error);
-        // If API fails, use defaults (not localStorage)
-        setHeroMedia({
-          url: "https://ext.same-assets.com/443545936/3789989498.webp",
-          type: "image"
-        });
+        console.error("Error loading from API:", error);
       }
 
-      const loadedClasses = localStorage.getItem("classes");
-      const loadedEvents = localStorage.getItem("events");
-      const loadedShop = localStorage.getItem("shopItems");
-      const loadedPartners = localStorage.getItem("partners");
-      const loadedTrainers = localStorage.getItem("trainers");
-
-    if (loadedClasses) setClasses(JSON.parse(loadedClasses));
-    else {
-      // Default classes
-      const defaultClasses = [
-        { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
-        { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
-        { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
-        { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
-        { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
-        { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
-      ];
-      setClasses(defaultClasses);
-    }
-
-    if (loadedEvents) setEvents(JSON.parse(loadedEvents));
-    else {
-      const defaultEvents = [
-        { id: '1', name: 'Intro to Martial Arts for FLINTA*', image: 'https://ext.same-assets.com/443545936/832029173.jpeg', date: 'SAMSTAG & SONNTAG', description: 'Das Wochenendseminar von und für FLINTA*s zur Einführung in den Kampfsport.' },
-        { id: '2', name: 'ProFitness Annual Challenge', image: 'https://ext.same-assets.com/443545936/4036118501.jpeg', date: '6.12.25', description: 'Join us for our annual fitness challenge and celebrate strength, endurance, and community at ProFitness Health Club.' },
-        { id: '3', name: 'Defensive-Boxing-Wrestling-for-MMA', image: 'https://ext.same-assets.com/443545936/2651900096.jpeg', date: '13.12.25', description: 'Join and learn all about boxing and wrestling for MMA.' },
-        { id: '4', name: 'Boxing Training', image: 'https://ext.same-assets.com/443545936/1760012837.jpeg', date: 'SATURDAYS', description: 'Advanced boxing training for experienced boxers. Every Saturday from 13:00 till 15:00 at ProFitness Health Club.' },
-        { id: '5', name: 'Gracie Academy Berlin: Open Mat', image: 'https://ext.same-assets.com/443545936/459894971.png', date: 'SONNTAGS', description: 'Open Mat für Grappling und BJJ' },
-        { id: '6', name: 'Kardia - Muay Thai Sparring', image: 'https://ext.same-assets.com/443545936/3867060023.jpeg', date: 'SONNTAGS', description: 'Fortgeschrittenes Muay Thai Sparring' }
-      ];
-      setEvents(defaultEvents);
-    }
-
-    if (loadedShop) setShopItems(JSON.parse(loadedShop));
-    else {
-      const defaultShop = [
-        { id: '1', name: 'T-Shirt', image: 'https://ext.same-assets.com/443545936/2710426474.webp' },
-        { id: '2', name: 'Hoodie', image: 'https://ext.same-assets.com/443545936/480816838.webp' },
-        { id: '3', name: 'Cap', image: 'https://ext.same-assets.com/443545936/1859491465.webp' },
-        { id: '4', name: 'Duffle Bag', image: 'https://ext.same-assets.com/443545936/3860077197.webp' }
-      ];
-      setShopItems(defaultShop);
-    }
-
-    if (loadedPartners) setPartners(JSON.parse(loadedPartners));
-    else {
-      const defaultPartners = [
-        { id: '1', name: 'GEMMAF', image: 'https://ext.same-assets.com/443545936/2709833716.webp' },
-        { id: '2', name: 'AMMAG', image: 'https://ext.same-assets.com/443545936/59465891.webp' }
-      ];
-      setPartners(defaultPartners);
-    }
-
-    if (loadedTrainers) {
-      const trainersData = JSON.parse(loadedTrainers);
-      setTrainers(trainersData.slice(0, 4));
-    } else {
-      const defaultTrainers = [
-        { 
-          id: '1', 
-          name: 'John Smith', 
-          image: 'https://ext.same-assets.com/443545936/1729744263.webp', 
-          specialty: 'Strength Training',
-          instagramUrl: '#',
-          facebookUrl: '#'
-        },
-        { 
-          id: '2', 
-          name: 'Sarah Johnson', 
-          image: 'https://ext.same-assets.com/443545936/691732246.webp', 
-          specialty: 'Yoga & Flexibility',
-          instagramUrl: '#',
-          linkedinUrl: '#'
-        },
-        { 
-          id: '3', 
-          name: 'Mike Chen', 
-          image: 'https://ext.same-assets.com/443545936/1129713061.webp', 
-          specialty: 'HIIT & Cardio',
-          instagramUrl: '#',
-          twitterUrl: '#'
-        },
-        { 
-          id: '4', 
-          name: 'Emma Wilson', 
-          image: 'https://ext.same-assets.com/443545936/1537262654.webp', 
-          specialty: 'Nutrition & Wellness',
-          instagramUrl: '#',
-          facebookUrl: '#'
-        }
-      ];
-      setTrainers(defaultTrainers.slice(0, 4));
-    }
-
-    const loadedAmenities = localStorage.getItem("amenities");
-    if (loadedAmenities) {
-      setAmenities(JSON.parse(loadedAmenities));
-    } else {
-      const defaultAmenities = [
-        { id: '1', name: 'Locker Rooms', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Spacious locker rooms with showers and changing facilities' },
-        { id: '2', name: 'Cardio Equipment', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'State-of-the-art cardio machines including treadmills, bikes, and ellipticals' },
-        { id: '3', name: 'Free Weights', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Comprehensive free weights area with dumbbells, barbells, and plates' },
-        { id: '4', name: 'Group Classes', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Multiple group fitness studios for various classes' },
-        { id: '5', name: 'Personal Training', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Private training areas with certified personal trainers' },
-        { id: '6', name: 'Sauna & Steam Room', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Relaxation facilities for post-workout recovery' }
-      ];
-      setAmenities(defaultAmenities);
-    }
+      applyContent({});
     };
 
     loadContent();
@@ -306,7 +160,7 @@ export default function Home() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
-            {classes.map((classItem) => (
+            {classes.slice(0, 3).map((classItem) => (
               <div key={classItem.id} className="group relative overflow-hidden bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 cursor-pointer hover-lift border border-gray-200">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl">
                   <Image
@@ -337,13 +191,15 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="text-center mt-12 sm:mt-16">
-            <Link href="/classes">
-              <button className="bg-black text-white px-8 sm:px-12 py-4 sm:py-5 font-bold text-sm sm:text-base uppercase hover:bg-profitness-brown transition-all duration-300 hover-lift rounded-lg shadow-lg">
-                View All Classes
-              </button>
-            </Link>
-          </div>
+          {classes.length > 3 && (
+            <div className="text-center mt-12 sm:mt-16">
+              <Link href="/classes">
+                <button className="bg-black text-white px-8 sm:px-12 py-4 sm:py-5 font-bold text-sm sm:text-base uppercase hover:bg-profitness-brown transition-all duration-300 hover-lift rounded-lg shadow-lg">
+                  View All Classes
+                </button>
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 
@@ -516,12 +372,12 @@ export default function Home() {
               >
                 {/* All 6 Images in a Single Row - Panoramic Style */}
                 {[
-                  'https://ext.same-assets.com/443545936/1729744263.webp',
-                  'https://ext.same-assets.com/443545936/691732246.webp',
-                  'https://ext.same-assets.com/443545936/1129713061.webp',
-                  'https://ext.same-assets.com/443545936/1537262654.webp',
-                  'https://ext.same-assets.com/443545936/1553179705.webp',
-                  'https://ext.same-assets.com/443545936/1443978950.webp'
+                  DEFAULT_IMAGES.carousel.image1,
+                  DEFAULT_IMAGES.carousel.image2,
+                  DEFAULT_IMAGES.carousel.image3,
+                  DEFAULT_IMAGES.carousel.image4,
+                  DEFAULT_IMAGES.carousel.image5,
+                  DEFAULT_IMAGES.carousel.image6
                 ].map((imageUrl, index) => (
                   <div 
                     key={index} 
@@ -595,7 +451,7 @@ export default function Home() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10 mb-12 sm:mb-16">
-            {events.map((event) => (
+            {events.slice(0, 3).map((event) => (
               <div key={event.id} className="bg-white rounded-2xl shadow-lg hover:shadow-2xl overflow-hidden group cursor-pointer border border-gray-200 transition-all duration-500 hover-lift">
                 <div className="relative aspect-video overflow-hidden rounded-t-2xl">
                   <Image
@@ -632,13 +488,15 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="text-center">
-            <Link href="/events">
-              <button className="bg-black text-white px-8 py-3 font-bold text-sm uppercase hover:bg-profitness-brown transition-all duration-300 hover-lift rounded-lg">
-                View All Events
-              </button>
-            </Link>
-          </div>
+          {events.length > 3 && (
+            <div className="text-center">
+              <Link href="/events">
+                <button className="bg-black text-white px-8 py-3 font-bold text-sm uppercase hover:bg-profitness-brown transition-all duration-300 hover-lift rounded-lg">
+                  View All Events
+                </button>
+              </Link>
+            </div>
+          )}
         </div>
       </section>
 

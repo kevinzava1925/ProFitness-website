@@ -1,81 +1,83 @@
 // Default images configuration - Replace with your Cloudinary URLs
 // Format: https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/folder/image-name.jpg
 
+const CLOUDINARY_DEMO = 'https://res.cloudinary.com/demo/image/upload/v1312461204/sample.jpg';
+
 export const DEFAULT_IMAGES = {
   // Classes
   classes: {
-    muayThai: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/muay-thai.jpg',
-    fitness: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/fitness.jpg',
-    mma: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/mma.jpg',
-    bjj: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/bjj.jpg',
-    boxing: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/boxing.jpg',
-    recovery: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/recovery.jpg',
+    muayThai: CLOUDINARY_DEMO,
+    fitness: CLOUDINARY_DEMO,
+    mma: CLOUDINARY_DEMO,
+    bjj: CLOUDINARY_DEMO,
+    boxing: CLOUDINARY_DEMO,
+    recovery: CLOUDINARY_DEMO,
   },
-  
+
   // Carousel Images (6 images for Training Image carousel on homepage)
   carousel: {
-    image1: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/carousel-1.jpg',
-    image2: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/carousel-2.jpg',
-    image3: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/carousel-3.jpg',
-    image4: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/carousel-4.jpg',
-    image5: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/carousel-5.jpg',
-    image6: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/carousel-6.jpg',
+    image1: CLOUDINARY_DEMO,
+    image2: CLOUDINARY_DEMO,
+    image3: CLOUDINARY_DEMO,
+    image4: CLOUDINARY_DEMO,
+    image5: CLOUDINARY_DEMO,
+    image6: CLOUDINARY_DEMO,
   },
-  
+
   // Events
   events: {
-    event1: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/event1.jpg',
-    event2: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/event2.jpg',
-    event3: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/event3.jpg',
-    event4: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/event4.jpg',
-    event5: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/event5.jpg',
-    event6: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/event6.jpg',
+    event1: CLOUDINARY_DEMO,
+    event2: CLOUDINARY_DEMO,
+    event3: CLOUDINARY_DEMO,
+    event4: CLOUDINARY_DEMO,
+    event5: CLOUDINARY_DEMO,
+    event6: CLOUDINARY_DEMO,
   },
-  
+
   // Shop
   shop: {
-    tshirt: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/tshirt.jpg',
-    hoodie: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/hoodie.jpg',
-    cap: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/cap.jpg',
-    duffle: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/duffle.jpg',
+    tshirt: CLOUDINARY_DEMO,
+    hoodie: CLOUDINARY_DEMO,
+    cap: CLOUDINARY_DEMO,
+    duffle: CLOUDINARY_DEMO,
   },
-  
+
   // Partners
   partners: {
-    gemmaf: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/gemmaf.jpg',
-    ammag: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/ammag.jpg',
+    gemmaf: CLOUDINARY_DEMO,
+    ammag: CLOUDINARY_DEMO,
   },
-  
+
   // Collaborations
   collaborations: {
-    brandA: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/brand-a.jpg',
-    brandB: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/brand-b.jpg',
+    brandA: CLOUDINARY_DEMO,
+    brandB: CLOUDINARY_DEMO,
   },
-  
+
   // Trainers
   trainers: {
-    trainer1: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/trainer1.jpg',
-    trainer2: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/trainer2.jpg',
-    trainer3: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/trainer3.jpg',
-    trainer4: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/trainer4.jpg',
+    trainer1: CLOUDINARY_DEMO,
+    trainer2: CLOUDINARY_DEMO,
+    trainer3: CLOUDINARY_DEMO,
+    trainer4: CLOUDINARY_DEMO,
   },
-  
+
   // Amenities
   amenities: {
-    locker: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/locker.jpg',
-    cardio: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/cardio.jpg',
-    weights: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/weights.jpg',
-    classes: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/classes.jpg',
-    training: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/training.jpg',
-    sauna: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/sauna.jpg',
+    locker: CLOUDINARY_DEMO,
+    cardio: CLOUDINARY_DEMO,
+    weights: CLOUDINARY_DEMO,
+    classes: CLOUDINARY_DEMO,
+    training: CLOUDINARY_DEMO,
+    sauna: CLOUDINARY_DEMO,
   },
-  
+
   // Hero & Other Images
-  hero: '',
+  hero: 'https://res.cloudinary.com/dvdogsvf6/image/upload/v1767933494/Copy_of_Pro_Fitness_2.0_launch-8084_prymvi.jpg',
   trialTraining: 'https://res.cloudinary.com/dvdogsvf6/image/upload/v1767933494/Copy_of_Pro_Fitness_2.0_launch-8084_prymvi.jpg',
   about: 'https://res.cloudinary.com/dvdogsvf6/image/upload/v1767933504/DSCF9778-31_erf0xa.jpg',
-  location: 'https://res.cloudinary.com/YOUR_CLOUD_NAME/image/upload/v1234567890/profitness/location.jpg',
-  
+  location: CLOUDINARY_DEMO,
+
   // Icons (keep existing if they work, or replace with Cloudinary)
   calendar: 'https://ext.same-assets.com/443545936/1099951661.svg',
   instagram: 'https://ext.same-assets.com/443545936/2173459103.svg',

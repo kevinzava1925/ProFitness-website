@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/utils/supabase';
+import { requireAdmin } from '@/utils/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    // Require admin authentication
+    await requireAdmin(request);
+    
     const supabase = createServerClient();
     
     const { data, error } = await supabase
@@ -30,12 +34,24 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    // Require admin authentication
+    await requireAdmin(request);
+    
     const { searchParams } = new URL(request.url);
     const messageId = searchParams.get('id');
 
     if (!messageId) {
       return NextResponse.json(
         { error: 'Message ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate messageId format (UUID)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(messageId)) {
+      return NextResponse.json(
+        { error: 'Invalid message ID format' },
         { status: 400 }
       );
     }

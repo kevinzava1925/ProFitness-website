@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import { DEFAULT_CONTENT } from "@/config/defaultContent";
 
 type CollaborationItem = {
   id: string;
@@ -17,20 +18,23 @@ export default function CollaborationsPage() {
   const [collaborations, setCollaborations] = useState<CollaborationItem[]>([]);
 
   useEffect(() => {
-    const loadedCollaborations = localStorage.getItem("collaborations");
-    if (loadedCollaborations) {
-      setCollaborations(JSON.parse(loadedCollaborations));
-    } else {
-      // Default collaborations
-      const defaultCollaborations = [
-        { id: '1', name: 'Fitness Brand A', image: 'https://ext.same-assets.com/443545936/1859491465.webp', description: 'Premium fitness equipment and gear' },
-        { id: '2', name: 'Nutrition Company B', image: 'https://ext.same-assets.com/443545936/3860077197.webp', description: 'Health supplements and nutrition products' },
-        { id: '3', name: 'Sports Apparel C', image: 'https://ext.same-assets.com/443545936/2710426474.webp', description: 'High-quality athletic wear and accessories' },
-        { id: '4', name: 'Wellness Partner D', image: 'https://ext.same-assets.com/443545936/1859491465.webp', description: 'Recovery and wellness solutions' }
-      ];
-      setCollaborations(defaultCollaborations);
-      localStorage.setItem("collaborations", JSON.stringify(defaultCollaborations));
-    }
+    const loadCollaborations = async () => {
+      try {
+        const response = await fetch("/api/content?type=collaborations&" + new Date().getTime());
+        if (response.ok) {
+          const data = await response.json();
+          setCollaborations(Array.isArray(data) && data.length ? data : DEFAULT_CONTENT.collaborations);
+          return;
+        }
+        console.error("Failed to load collaborations from API:", response.statusText);
+      } catch (error) {
+        console.error("Error loading collaborations:", error);
+      }
+
+      setCollaborations(DEFAULT_CONTENT.collaborations);
+    };
+
+    loadCollaborations();
   }, []);
 
   return (

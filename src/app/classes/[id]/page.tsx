@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import Navigation from "../../components/Navigation";
 import Footer from "../../components/Footer";
+import { DEFAULT_CONTENT } from "@/config/defaultContent";
 
 type ClassItem = {
   id: string;
@@ -25,43 +26,30 @@ export default function ClassDetailPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadedClasses = localStorage.getItem("classes");
-    if (loadedClasses) {
-      const classes = JSON.parse(loadedClasses);
-      const foundClass = classes.find((c: ClassItem) => c.id === classId);
-      if (foundClass) {
-        setClassItem(foundClass);
-      } else {
-        // Fallback to default classes if not found
-        const defaultClasses = [
-          { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
-          { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
-          { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
-          { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
-          { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
-          { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
-        ];
-        const fallbackClass = defaultClasses.find(c => c.id === classId);
-        if (fallbackClass) {
-          setClassItem(fallbackClass);
+    const loadClass = async () => {
+      try {
+        const response = await fetch("/api/content?type=classes&" + new Date().getTime());
+        if (response.ok) {
+          const data = await response.json();
+          const list: ClassItem[] = Array.isArray(data) && data.length ? data : DEFAULT_CONTENT.classes;
+          const foundClass = list.find((c) => c.id === classId);
+          if (foundClass) {
+            setClassItem(foundClass);
+          }
+          setLoading(false);
+          return;
         }
+        console.error("Failed to load class from API:", response.statusText);
+      } catch (error) {
+        console.error("Error loading class:", error);
       }
-    } else {
-      // Use default classes
-      const defaultClasses = [
-        { id: '1', name: 'MUAY THAI', image: 'https://ext.same-assets.com/443545936/1729744263.webp', description: 'Traditional Thai Boxing' },
-        { id: '2', name: 'FITNESS', image: 'https://ext.same-assets.com/443545936/691732246.webp', description: 'Strength and Conditioning' },
-        { id: '3', name: 'MMA', image: 'https://ext.same-assets.com/443545936/1129713061.webp', description: 'Mixed Martial Arts' },
-        { id: '4', name: 'BJJ', image: 'https://ext.same-assets.com/443545936/1537262654.webp', description: 'Brazilian Jiu-Jitsu' },
-        { id: '5', name: 'BOXING', image: 'https://ext.same-assets.com/443545936/1553179705.webp', description: 'Western Boxing' },
-        { id: '6', name: 'RECOVERY', image: 'https://ext.same-assets.com/443545936/1443978950.webp', description: 'Yoga and Massage' }
-      ];
-      const fallbackClass = defaultClasses.find(c => c.id === classId);
-      if (fallbackClass) {
-        setClassItem(fallbackClass);
-      }
-    }
-    setLoading(false);
+
+      const fallbackClass = DEFAULT_CONTENT.classes.find((c) => c.id === classId) || null;
+      setClassItem(fallbackClass);
+      setLoading(false);
+    };
+
+    loadClass();
   }, [classId]);
 
   if (loading) {
