@@ -24,7 +24,8 @@ export default function EventsPage() {
         const response = await fetch("/api/content?type=events&" + new Date().getTime());
         if (response.ok) {
           const data = await response.json();
-          setEvents(Array.isArray(data) && data.length ? data : DEFAULT_CONTENT.events);
+          // Only set events if they exist from dashboard, don't use defaults
+          setEvents(Array.isArray(data) && data.length ? data : []);
           return;
         }
         console.error("Failed to load events from API:", response.statusText);
@@ -32,7 +33,8 @@ export default function EventsPage() {
         console.error("Error loading events:", error);
       }
 
-      setEvents(DEFAULT_CONTENT.events);
+      // Don't set default events - show empty state instead
+      setEvents([]);
     };
 
     loadEvents();

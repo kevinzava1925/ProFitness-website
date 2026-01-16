@@ -4,6 +4,7 @@ import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
 import Image from "next/image";
 import { useState, useEffect } from "react";
+import { DEFAULT_CONTENT } from "@/config/defaultContent";
 
 type ShopItem = {
   id: string;
@@ -16,18 +17,25 @@ export default function ShopPage() {
   const [shopItems, setShopItems] = useState<ShopItem[]>([]);
 
   useEffect(() => {
-    const loadedShop = localStorage.getItem("shopItems");
-    if (loadedShop) {
-      setShopItems(JSON.parse(loadedShop));
-    } else {
-      const defaultShop = [
-        { id: '1', name: 'T-Shirt', image: 'https://ext.same-assets.com/443545936/2710426474.webp', price: '$29.99' },
-        { id: '2', name: 'Hoodie', image: 'https://ext.same-assets.com/443545936/480816838.webp', price: '$59.99' },
-        { id: '3', name: 'Cap', image: 'https://ext.same-assets.com/443545936/1859491465.webp', price: '$24.99' },
-        { id: '4', name: 'Duffle Bag', image: 'https://ext.same-assets.com/443545936/3860077197.webp', price: '$39.99' }
-      ];
-      setShopItems(defaultShop);
-    }
+    const loadShopItems = async () => {
+      try {
+        const response = await fetch("/api/content?type=shop&" + new Date().getTime());
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setShopItems(data);
+            return;
+          }
+        }
+        console.error("Failed to load shop items from API:", response.statusText);
+      } catch (error) {
+        console.error("Error loading shop items:", error);
+      }
+      // Fallback to default content
+      setShopItems(DEFAULT_CONTENT.shop || []);
+    };
+
+    loadShopItems();
   }, []);
 
   return (
@@ -62,11 +70,8 @@ export default function ShopPage() {
                     </div>
                     <h3 className="font-bold text-base sm:text-lg mb-1 sm:mb-2">{product.name}</h3>
                     {product.price && (
-                      <p className="text-gray-600 mb-3 sm:mb-4 font-semibold text-sm sm:text-base">{product.price}</p>
+                      <p className="text-gray-600 font-semibold text-sm sm:text-base">{product.price}</p>
                     )}
-                    <button className="w-full border-2 border-black px-4 sm:px-6 py-1.5 sm:py-2 font-bold text-xs sm:text-sm uppercase hover:bg-black hover:text-white transition-colors">
-                      Add to Cart
-                    </button>
                   </div>
                 ))}
               </div>

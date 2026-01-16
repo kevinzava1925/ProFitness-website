@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useState, useEffect } from "react";
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
+import { DEFAULT_CONTENT } from "@/config/defaultContent";
 
 type Trainer = {
   id: string;
@@ -22,56 +23,25 @@ export default function PersonalTrainersPage() {
   const [trainers, setTrainers] = useState<Trainer[]>([]);
 
   useEffect(() => {
-    const loadedTrainers = localStorage.getItem("trainers");
-    if (loadedTrainers) {
-      setTrainers(JSON.parse(loadedTrainers));
-    } else {
-      // Default trainers
-      const defaultTrainers = [
-        { 
-          id: '1', 
-          name: 'John Smith', 
-          image: 'https://ext.same-assets.com/443545936/1729744263.webp', 
-          specialty: 'Strength Training',
-          bio: 'With over 10 years of experience in strength training and bodybuilding, John helps clients build muscle and achieve their fitness goals.',
-          instagramUrl: '#',
-          facebookUrl: '#',
-          twitterUrl: '#'
-        },
-        { 
-          id: '2', 
-          name: 'Sarah Johnson', 
-          image: 'https://ext.same-assets.com/443545936/691732246.webp', 
-          specialty: 'Yoga & Flexibility',
-          bio: 'Certified yoga instructor specializing in flexibility, mobility, and mindfulness practices for overall wellness.',
-          instagramUrl: '#',
-          facebookUrl: '#',
-          linkedinUrl: '#'
-        },
-        { 
-          id: '3', 
-          name: 'Mike Chen', 
-          image: 'https://ext.same-assets.com/443545936/1129713061.webp', 
-          specialty: 'HIIT & Cardio',
-          bio: 'Expert in high-intensity interval training and cardiovascular fitness, helping clients burn fat and improve endurance.',
-          instagramUrl: '#',
-          twitterUrl: '#',
-          linkedinUrl: '#'
-        },
-        { 
-          id: '4', 
-          name: 'Emma Wilson', 
-          image: 'https://ext.same-assets.com/443545936/1537262654.webp', 
-          specialty: 'Nutrition & Wellness',
-          bio: 'Registered dietitian and wellness coach specializing in nutrition planning and lifestyle optimization.',
-          instagramUrl: '#',
-          facebookUrl: '#',
-          linkedinUrl: '#'
+    const loadTrainers = async () => {
+      try {
+        const response = await fetch("/api/content?type=trainers&" + new Date().getTime());
+        if (response.ok) {
+          const data = await response.json();
+          if (Array.isArray(data) && data.length > 0) {
+            setTrainers(data);
+            return;
+          }
         }
-      ];
-      setTrainers(defaultTrainers);
-      localStorage.setItem("trainers", JSON.stringify(defaultTrainers));
-    }
+        console.error("Failed to load trainers from API:", response.statusText);
+      } catch (error) {
+        console.error("Error loading trainers:", error);
+      }
+      // Fallback to default content
+      setTrainers(DEFAULT_CONTENT.trainers || []);
+    };
+
+    loadTrainers();
   }, []);
 
   return (

@@ -16,6 +16,7 @@ type ClassItem = {
   trainer?: string;
   schedule?: string[];
   headerImage?: string;
+  order?: number; // For custom ordering
 };
 
 export default function ClassesPage() {
@@ -27,15 +28,24 @@ export default function ClassesPage() {
         const response = await fetch("/api/content?type=classes&" + new Date().getTime());
         if (response.ok) {
           const data = await response.json();
-          setClasses(Array.isArray(data) && data.length ? data : DEFAULT_CONTENT.classes);
-          return;
+          if (Array.isArray(data) && data.length > 0) {
+            // Sort by order field
+            const sortedClasses = [...data].sort((a, b) => {
+              const orderA = a.order !== undefined ? a.order : 999999;
+              const orderB = b.order !== undefined ? b.order : 999999;
+              if (orderA !== orderB) return orderA - orderB;
+              return a.id.localeCompare(b.id);
+            });
+            setClasses(sortedClasses);
+            return;
+          }
         }
         console.error("Failed to load classes from API:", response.statusText);
       } catch (error) {
         console.error("Error loading classes:", error);
       }
-
-      setClasses(DEFAULT_CONTENT.classes);
+      // Fallback to default content
+      setClasses(DEFAULT_CONTENT.classes || []);
     };
 
     loadClasses();
@@ -62,7 +72,7 @@ export default function ClassesPage() {
               Our Classes
             </h1>
             <p className="text-white text-base sm:text-lg md:text-xl max-w-2xl mx-auto">
-              Discover all our fitness programs designed to help you achieve your goals
+              Discover all our fitness programmes designed to help you achieve your goals
             </p>
           </div>
         </section>

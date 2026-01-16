@@ -25,7 +25,7 @@ export default function HelpPage() {
               <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
                 <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4 uppercase">How do I sign up for a trial class?</h2>
                 <p className="text-gray-700 text-sm sm:text-base leading-relaxed">
-                  You can sign up for a free trial class by visiting our gym during opening hours or contacting us through our contact page. 
+                  You can sign up for a trial class by visiting our gym during opening hours or contacting us through our contact page. 
                   Our team will help you find a suitable class and schedule your trial session.
                 </p>
               </div>

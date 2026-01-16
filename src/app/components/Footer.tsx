@@ -13,6 +13,7 @@ type FooterData = {
   hoursWeekday: string;
   hoursSaturday: string;
   hoursSunday: string;
+  locationImage?: string;
   instagramUrl: string;
   facebookUrl: string;
   youtubeUrl: string;
@@ -47,6 +48,7 @@ export default function Footer() {
           hoursWeekday: '06 AM - 10 PM',
           hoursSaturday: '08 AM - 8 PM',
           hoursSunday: '09 AM - 6 PM',
+          locationImage: '',
           instagramUrl: '#',
           facebookUrl: '#',
           youtubeUrl: '#',
@@ -66,6 +68,7 @@ export default function Footer() {
           hoursWeekday: '06 AM - 10 PM',
           hoursSaturday: '08 AM - 8 PM',
           hoursSunday: '09 AM - 6 PM',
+          locationImage: '',
           instagramUrl: '#',
           facebookUrl: '#',
           youtubeUrl: '#',
@@ -116,6 +119,7 @@ export default function Footer() {
                     alt="Instagram"
                     width={24}
                     height={24}
+                    className="brightness-0 invert"
                   />
                 </a>
               )}
@@ -126,6 +130,7 @@ export default function Footer() {
                     alt="Facebook"
                     width={24}
                     height={24}
+                    className="brightness-0 invert"
                   />
                 </a>
               )}
@@ -136,12 +141,13 @@ export default function Footer() {
                     alt="YouTube"
                     width={24}
                     height={24}
+                    className="brightness-0 invert"
                   />
                 </a>
               )}
               {footerData.tiktokUrl && footerData.tiktokUrl !== '#' && (
                 <a href={footerData.tiktokUrl} target="_blank" rel="noopener noreferrer" className="hover:opacity-70 transition-opacity">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
                   </svg>
                 </a>
@@ -169,24 +175,16 @@ export default function Footer() {
             <Link href="/about" className="text-gray-400 hover:text-white transition-colors uppercase">About Us</Link>
             <Link href="/amenities" className="text-gray-400 hover:text-white transition-colors uppercase">Amenities</Link>
             <Link href="/shop" className="text-gray-400 hover:text-white transition-colors uppercase">Shop</Link>
-            <Link href="/member-area" className="text-gray-400 hover:text-white transition-colors uppercase">Member Area</Link>
           </div>
 
             <div className="flex flex-wrap gap-3 sm:gap-4 lg:gap-6 justify-center text-xs sm:text-sm mb-4 sm:mb-6">
               <Link href="/contact" className="text-gray-400 hover:text-white transition-colors">Contact</Link>
-              <Link href="#" className="text-gray-400 hover:text-white transition-colors">Data Privacy</Link>
-              <Link href="#" className="text-gray-400 hover:text-white transition-colors">Imprint</Link>
             </div>
 
             <p className="text-center text-gray-500 text-xs px-2">
               {footerData.copyright}
             </p>
 
-            <p className="text-center mt-3 sm:mt-4">
-              <Link href="/admin" className="text-gray-600 hover:text-gray-400 text-xs transition-colors">
-                Admin Login
-              </Link>
-            </p>
         </div>
       </div>
     </footer>

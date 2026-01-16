@@ -10,8 +10,9 @@ import { rateLimit, getClientIP } from '@/utils/rateLimit';
 export async function POST(req) {
   try {
     // Require admin authentication
+    let adminUser;
     try {
-      await requireAdmin(req);
+      adminUser = await requireAdmin(req);
     } catch (authError) {
       return Response.json(
         { error: 'Unauthorized. Admin access required.' },
@@ -19,9 +20,10 @@ export async function POST(req) {
       );
     }
 
-    // Rate limiting
+    // Rate limiting - Higher limit for authenticated admins (100 uploads per hour)
     const clientIP = getClientIP(req);
-    if (!rateLimit(`upload-${clientIP}`, 20, 60 * 60 * 1000)) { // 20 uploads per hour
+    const rateLimitKey = `admin-upload-${adminUser.userId || clientIP}`;
+    if (!rateLimit(rateLimitKey, 100, 60 * 60 * 1000)) { // 100 uploads per hour for admins
       return Response.json(
         { error: 'Too many uploads. Please try again later.' },
         { status: 429 }

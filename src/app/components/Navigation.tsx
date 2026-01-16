@@ -27,9 +27,8 @@ export default function Navigation() {
             <Link href="/classes-schedule" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Classes</Link>
             <Link href="/events" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Events</Link>
             <Link href="/pricing" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Pricing</Link>
+            <Link href="/technogym-app" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Technogym</Link>
             <Link href="/shop" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Shop</Link>
-            <Link href="/register" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Register</Link>
-            <Link href="/member-area" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Member Area</Link>
             <Link href="/help" className="text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase">Help</Link>
           </div>
 
@@ -57,9 +56,8 @@ export default function Navigation() {
             <Link href="/classes-schedule" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Classes</Link>
             <Link href="/events" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Events</Link>
             <Link href="/pricing" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Pricing</Link>
+            <Link href="/technogym-app" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Technogym</Link>
             <Link href="/shop" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Shop</Link>
-            <Link href="/register" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Register</Link>
-            <Link href="/member-area" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Member Area</Link>
             <Link href="/help" className="block text-white hover:text-[#A68B5F] transition-colors duration-300 uppercase py-2 text-sm font-bold" onClick={() => setMobileMenuOpen(false)}>Help</Link>
           </div>
         </div>

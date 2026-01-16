@@ -19,6 +19,7 @@ type ContentItem = {
   trainer?: string;
   schedule?: string[];
   headerImage?: string;
+  order?: number; // For custom ordering
 };
 
 type Trainer = {
@@ -31,11 +32,23 @@ type Trainer = {
   facebookUrl?: string;
   twitterUrl?: string;
   linkedinUrl?: string;
+  order?: number; // For custom ordering
 };
 
 type HeroMedia = {
   url: string;
   type: 'image' | 'video';
+};
+
+type ContentResponse = {
+  classes?: ContentItem[];
+  events?: ContentItem[];
+  shop?: ContentItem[];
+  partners?: ContentItem[];
+  carousel?: ContentItem[];
+  trainers?: Trainer[];
+  amenities?: ContentItem[];
+  hero?: HeroMedia;
 };
 
 export default function Home() {
@@ -45,18 +58,46 @@ export default function Home() {
   const [partners, setPartners] = useState<ContentItem[]>([]);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
   const [amenities, setAmenities] = useState<ContentItem[]>([]);
+  const [carouselImages, setCarouselImages] = useState<ContentItem[]>([]);
   const [trainerCarouselIndex, setTrainerCarouselIndex] = useState(0);
   const [heroMedia, setHeroMedia] = useState<HeroMedia | null>(null);
 
+  // Helper function to sort items by order field
+  const sortByOrder = (items: ContentItem[]): ContentItem[] => {
+    return [...items].sort((a, b) => {
+      const orderA = a.order !== undefined ? a.order : 999999;
+      const orderB = b.order !== undefined ? b.order : 999999;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.id.localeCompare(b.id);
+    });
+  };
+
+  // Helper function to sort trainers by order field
+  const sortTrainersByOrder = (items: Trainer[]): Trainer[] => {
+    return [...items].sort((a, b) => {
+      const orderA = a.order !== undefined ? a.order : 999999;
+      const orderB = b.order !== undefined ? b.order : 999999;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.id.localeCompare(b.id);
+    });
+  };
+
   // Load content from API (Supabase) - no localStorage fallback for syncing
   useEffect(() => {
-    const applyContent = (allContent: any) => {
-      setClasses(allContent?.classes?.length ? allContent.classes : DEFAULT_CONTENT.classes);
-      setEvents(allContent?.events?.length ? allContent.events : DEFAULT_CONTENT.events);
-      setShopItems(allContent?.shop?.length ? allContent.shop : DEFAULT_CONTENT.shop);
-      setPartners(allContent?.partners?.length ? allContent.partners : DEFAULT_CONTENT.partners);
-      setTrainers(allContent?.trainers?.length ? allContent.trainers.slice(0, 4) : DEFAULT_CONTENT.trainers);
-      setAmenities(allContent?.amenities?.length ? allContent.amenities : DEFAULT_CONTENT.amenities);
+    const applyContent = (allContent: ContentResponse) => {
+      // Only use default content if API returns empty, not if it returns an empty array
+      const sortedClasses = allContent?.classes?.length ? sortByOrder(allContent.classes) : [];
+      setClasses(sortedClasses);
+      // Events: Only set if they exist from dashboard, don't use defaults
+      const sortedEvents = allContent?.events?.length ? sortByOrder(allContent.events) : [];
+      setEvents(sortedEvents);
+      setShopItems(allContent?.shop?.length ? sortByOrder(allContent.shop) : DEFAULT_CONTENT.shop);
+      setPartners(allContent?.partners?.length ? sortByOrder(allContent.partners) : DEFAULT_CONTENT.partners);
+      setCarouselImages(allContent?.carousel?.length ? sortByOrder(allContent.carousel) : []);
+      const sortedTrainers = allContent?.trainers?.length ? sortTrainersByOrder(allContent.trainers).slice(0, 4) : DEFAULT_CONTENT.trainers;
+      setTrainers(sortedTrainers);
+      const sortedAmenities = allContent?.amenities?.length ? sortByOrder(allContent.amenities) : DEFAULT_CONTENT.amenities;
+      setAmenities(sortedAmenities);
       setHeroMedia(
         allContent?.hero && typeof allContent.hero === "object" && allContent.hero.url
           ? allContent.hero
@@ -83,6 +124,13 @@ export default function Home() {
     loadContent();
   }, []);
 
+  useEffect(() => {
+    const totalSlides = Math.max(1, Math.ceil(carouselImages.length / 2));
+    if (trainerCarouselIndex >= totalSlides) {
+      setTrainerCarouselIndex(0);
+    }
+  }, [carouselImages.length, trainerCarouselIndex]);
+
   return (
     <div className="min-h-screen">
       <Navigation />
@@ -106,7 +154,7 @@ export default function Home() {
               </video>
             ) : (
               <Image
-                src={heroMedia?.url || "https://ext.same-assets.com/443545936/3789989498.webp"}
+                src={heroMedia?.url || DEFAULT_IMAGES.hero || "https://ext.same-assets.com/443545936/3789989498.webp"}
                 alt="Fitness Training"
                 fill
                 className="object-cover opacity-75"
@@ -123,13 +171,13 @@ export default function Home() {
           <div className="max-w-3xl">
             <h1 className="text-white mb-6 sm:mb-8 animate-slide-up">
               <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black uppercase leading-tight sm:leading-none mb-1 sm:mb-2">
-                Transform.
+                Make.
               </div>
               <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black uppercase leading-tight sm:leading-none mb-1 sm:mb-2">
-                Achieve.
+                It.
               </div>
               <div className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-black uppercase leading-tight sm:leading-none">
-                Excel.
+                Happen.
               </div>
             </h1>
 
@@ -156,7 +204,7 @@ export default function Home() {
           </h2>
 
           <p className="text-center text-gray-700 text-base sm:text-lg max-w-4xl mx-auto mb-12 sm:mb-16 lg:mb-20 leading-relaxed px-2 sm:px-0">
-            On over 1500 m², we offer you a comprehensive fitness experience. From strength training to cardio, yoga to high-intensity interval training – at ProFitness Health Club, you'll find everything you need to achieve your fitness goals. Whether you're just starting your fitness journey or are an experienced athlete, we have the right program for you. For your active recovery, you can also attend our yoga classes or book a relaxing massage.
+            On over 1500 m², we offer you a comprehensive fitness experience. From strength training to cardio, yoga to high-intensity interval training – at ProFitness Health Club, you'll find everything you need to achieve your fitness goals. Whether you're just starting your fitness journey or are an experienced athlete, we have the right programme for you. For your active recovery, you can also attend our yoga classes or book a relaxing massage.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10">
@@ -203,6 +251,66 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Technogym App Section */}
+      <section className="py-12 sm:py-16 lg:py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center">
+            <div>
+              <h2 className="section-heading mb-4 sm:mb-6">
+                <span className="gradient-underline">Technogym App</span>
+              </h2>
+              <p className="text-gray-700 text-base sm:text-lg leading-relaxed mb-6 sm:mb-8">
+                Book classes, track workouts, and manage your training on the go with the
+                Technogym App. Your next session is just a tap away.
+              </p>
+              <div className="flex flex-col sm:flex-row sm:flex-nowrap gap-3 sm:gap-4">
+                <a
+                  href="https://apps.apple.com/us/app/technogym-training-coach/id976506047"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 bg-black text-white px-5 sm:px-6 py-3 sm:py-4 font-bold text-sm sm:text-base uppercase hover:bg-profitness-brown transition-all duration-300 hover-lift rounded-lg shadow-lg whitespace-nowrap"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                    <path d="M16.365 1.43c0 1.14-.477 2.245-1.246 3.083-.85.923-2.224 1.64-3.43 1.56-.153-1.096.39-2.237 1.153-3.06.8-.888 2.184-1.56 3.523-1.583z" />
+                    <path d="M20.248 17.23c-.54 1.246-.802 1.805-1.496 2.89-.967 1.52-2.33 3.41-4.02 3.43-1.502.02-1.89-.98-3.93-.97-2.04.01-2.468.99-3.97.98-1.69-.02-2.98-1.7-3.95-3.22-2.72-4.18-3.01-9.07-1.33-11.68 1.2-1.88 3.1-2.98 4.88-2.98 1.82 0 2.96 1 4.46 1 1.46 0 2.35-1 4.42-1 1.58 0 3.26.86 4.45 2.35-3.92 2.15-3.28 7.73.49 10.2z" />
+                  </svg>
+                  App Store
+                </a>
+                <a
+                  href="https://play.google.com/store/apps/details?id=com.technogym.tgapp"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 border border-black text-black px-5 sm:px-6 py-3 sm:py-4 font-bold text-sm sm:text-base uppercase hover:bg-profitness-brown hover:text-white hover:border-profitness-brown transition-all duration-300 hover-lift rounded-lg whitespace-nowrap"
+                >
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true" fill="currentColor">
+                    <path d="M17.523 9.384l1.826-3.163a.5.5 0 10-.866-.5l-1.85 3.206a8.617 8.617 0 00-9.266 0L5.517 5.72a.5.5 0 10-.866.5l1.825 3.163A7.51 7.51 0 003 15.5V19a2 2 0 002 2h1v-4h12v4h1a2 2 0 002-2v-3.5a7.51 7.51 0 00-3.477-6.116z" />
+                    <circle cx="8" cy="13" r="1" />
+                    <circle cx="16" cy="13" r="1" />
+                  </svg>
+                  Google Play
+                </a>
+                <Link href="/technogym-app">
+                  <button className="border border-black text-black px-5 sm:px-6 py-3 sm:py-4 font-bold text-sm sm:text-base uppercase hover:bg-profitness-brown hover:text-white hover:border-profitness-brown transition-all duration-300 hover-lift rounded-lg whitespace-nowrap">
+                    Learn More
+                  </button>
+                </Link>
+              </div>
+            </div>
+            <div className="bg-black text-white rounded-2xl p-6 sm:p-8 shadow-xl">
+              <h3 className="text-xl sm:text-2xl font-black uppercase mb-3">Book Your Class</h3>
+              <p className="text-gray-300 text-sm sm:text-base leading-relaxed mb-4">
+                New to the app? Learn how to book your spot in minutes and never miss a session.
+              </p>
+              <Link href="/technogym-app">
+                <button className="bg-white text-black px-6 sm:px-8 py-3 sm:py-4 font-bold text-sm sm:text-base uppercase hover:bg-profitness-brown hover:text-white transition-all duration-300 rounded-lg">
+                  How It Works
+                </button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Trial Training Section */}
       <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-gray-900 via-black to-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -213,17 +321,17 @@ export default function Home() {
               </h2>
 
               <div className="space-y-4 text-gray-300 leading-relaxed">
-                <p>You want to try out a free training session with us? No problem! Just come by during our regular opening hours and talk to our team at the desk.</p>
+                <p>You want to try out training session with us? No problem! Just come by during our regular opening hours and talk to our team at the desk.</p>
 
-                <p>There, we'll advise you, find a suitable date together, and give you a tour of the gym.</p>
+                <p>There, we'll advise you and give you a tour of the gym.</p>
 
-                <p>Please note that due to high demand, we can rarely offer same-day appointments. For additional useful information about your trial training, please visit our Helpcenter.</p>
+                <p>For additional useful information about your trial training, please visit our Helpcentre.</p>
               </div>
             </div>
 
             <div className="relative aspect-[4/3] lg:aspect-square rounded-2xl overflow-hidden shadow-2xl">
               <Image
-                src="https://ext.same-assets.com/443545936/230438858.webp"
+                src={DEFAULT_IMAGES.trialTraining}
                 alt="Trial Training"
                 fill
                 className="object-cover"
@@ -240,7 +348,7 @@ export default function Home() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-12 lg:gap-16 items-start">
             <div className="relative aspect-[4/3] lg:sticky lg:top-24 rounded-2xl overflow-hidden shadow-xl">
               <Image
-                src="https://ext.same-assets.com/443545936/2484507683.webp"
+                src={DEFAULT_IMAGES.about}
                 alt="About ProFitness Health Club"
                 fill
                 className="object-cover"
@@ -254,9 +362,10 @@ export default function Home() {
               </h2>
 
               <div className="space-y-4 text-gray-700 leading-relaxed mb-8">
-                <p>We founded the gym in 2010 and have been based at Moritzplatz ever since. Originally starting as a pure MMA gym, over time, we have evolved into a hub for various martial arts with a focus on MMA, BJJ, and Muay Thai.</p>
+                <p>ProFitness Gym is where commitment meets results.
+                Built on the belief that fitness is for everyone, we deliver a world-class training experience through elite equipment, expert coaching, and a community that pushes you to be your best. </p>
 
-                <p>Seven days a week, our team and community ensure a vast array of activities through over 140 classes. Our fitness area and spacious mat areas provide opportunities for independent strength and technique training or sparring sessions with friends.</p>
+                <p>Every detail is designed to support your journey — so you can train with purpose, move with confidence, and unlock your full potential.</p>
               </div>
 
               <Link href="/about">
@@ -363,83 +472,83 @@ export default function Home() {
             </Link>
           </div>
 
-          {/* Trainer Images Carousel - 6 Picture Panoramic Collage */}
-          <div className="relative">
-            <div className="overflow-hidden rounded-2xl">
-              <div 
-                className="flex transition-transform duration-700 ease-in-out"
-                style={{ transform: `translateX(-${trainerCarouselIndex * 50}%)` }}
-              >
-                {/* All 6 Images in a Single Row - Panoramic Style */}
-                {[
-                  DEFAULT_IMAGES.carousel.image1,
-                  DEFAULT_IMAGES.carousel.image2,
-                  DEFAULT_IMAGES.carousel.image3,
-                  DEFAULT_IMAGES.carousel.image4,
-                  DEFAULT_IMAGES.carousel.image5,
-                  DEFAULT_IMAGES.carousel.image6
-                ].map((imageUrl, index) => (
-                  <div 
-                    key={index} 
-                    className="relative aspect-[4/3] sm:aspect-[16/9] flex-shrink-0 overflow-hidden"
-                    style={{ width: '50%' }}
-                  >
-                    <Image
-                      src={imageUrl}
-                      alt={`Training Image ${index + 1}`}
-                      fill
-                      className="object-cover"
+          {/* Trainer Images Carousel */}
+          {carouselImages.length > 0 && (
+            <div className="relative">
+              <div className="overflow-hidden rounded-2xl">
+                <div
+                  className="flex transition-transform duration-700 ease-in-out"
+                  style={{ transform: `translateX(-${trainerCarouselIndex * 100}%)` }}
+                >
+                  {carouselImages.map((imageItem, index) => (
+                    <div
+                      key={imageItem.id}
+                      className="relative aspect-[4/3] sm:aspect-[16/9] flex-shrink-0 overflow-hidden"
+                      style={{ width: carouselImages.length > 1 ? '50%' : '100%' }}
+                    >
+                      <Image
+                        src={imageItem.image}
+                        alt={imageItem.name || `Training Image ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+                      {index < carouselImages.length - 1 && (
+                        <div className="absolute right-0 top-0 bottom-0 w-px bg-black/10 z-10" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Carousel Navigation */}
+              <div className="flex items-center justify-center gap-3 mt-6 sm:mt-8">
+                <button
+                  onClick={() => {
+                    const totalSlides = Math.max(1, Math.ceil(carouselImages.length / 2));
+                    setTrainerCarouselIndex((prev) => (prev === 0 ? totalSlides - 1 : prev - 1));
+                  }}
+                  className="bg-black text-white p-3 rounded-full hover:bg-profitness-brown transition-all duration-300 hover-lift"
+                  aria-label="Previous images"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+
+                <div className="flex gap-2">
+                  {Array.from({ length: Math.max(1, Math.ceil(carouselImages.length / 2)) }).map((_, dot) => (
+                    <button
+                      key={dot}
+                      onClick={() => setTrainerCarouselIndex(dot)}
+                      className={`h-2.5 rounded-full transition-all duration-300 ${
+                        trainerCarouselIndex === dot ? 'bg-profitness-brown w-8' : 'bg-gray-400 hover:bg-gray-300 w-2.5'
+                      }`}
+                      aria-label={`Go to slide ${dot + 1}`}
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
-                    {/* Seamless connection - no gaps between images */}
-                    {index < 5 && (
-                      <div className="absolute right-0 top-0 bottom-0 w-px bg-black/10 z-10" />
-                    )}
-                  </div>
-                ))}
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => {
+                    const totalSlides = Math.max(1, Math.ceil(carouselImages.length / 2));
+                    setTrainerCarouselIndex((prev) => (prev === totalSlides - 1 ? 0 : prev + 1));
+                  }}
+                  className="bg-black text-white p-3 rounded-full hover:bg-profitness-brown transition-all duration-300 hover-lift"
+                  aria-label="Next images"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </button>
               </div>
             </div>
-            
-            {/* Carousel Navigation */}
-            <div className="flex items-center justify-center gap-3 mt-6 sm:mt-8">
-              <button
-                onClick={() => setTrainerCarouselIndex((prev) => (prev === 0 ? 1 : prev - 1))}
-                className="bg-black text-white p-3 rounded-full hover:bg-profitness-brown transition-all duration-300 hover-lift"
-                aria-label="Previous images"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-              </button>
-              
-              <div className="flex gap-2">
-                {[0, 1].map((dot) => (
-                  <button
-                    key={dot}
-                    onClick={() => setTrainerCarouselIndex(dot)}
-                    className={`h-2.5 rounded-full transition-all duration-300 ${
-                      trainerCarouselIndex === dot ? 'bg-profitness-brown w-8' : 'bg-gray-400 hover:bg-gray-300 w-2.5'
-                    }`}
-                    aria-label={`Go to slide ${dot + 1}`}
-                  />
-                ))}
-              </div>
-              
-              <button
-                onClick={() => setTrainerCarouselIndex((prev) => (prev === 1 ? 0 : prev + 1))}
-                className="bg-black text-white p-3 rounded-full hover:bg-profitness-brown transition-all duration-300 hover-lift"
-                aria-label="Next images"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-            </div>
-          </div>
+          )}
         </div>
       </section>
 
-      {/* Events Section */}
+      {/* Events Section - Only show if events exist from dashboard */}
+      {events.length > 0 && (
       <section id="events" className="py-16 sm:py-20 lg:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <h2 className="section-heading text-center mb-6 sm:mb-8">
@@ -447,7 +556,7 @@ export default function Home() {
           </h2>
 
           <p className="text-center text-gray-700 text-base sm:text-lg mb-12 sm:mb-16 lg:mb-20 leading-relaxed px-2 sm:px-0">
-            Seminars with local and international fitness experts or tournaments in all areas are regularly featured in our program.
+            Seminars with local and international fitness experts or tournaments in all areas are regularly featured in our programme.
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10 mb-12 sm:mb-16">
@@ -499,6 +608,7 @@ export default function Home() {
           )}
         </div>
       </section>
+      )}
 
       {/* FAQ & Contact Section */}
       <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-black via-gray-900 to-black text-white">
@@ -512,9 +622,9 @@ export default function Home() {
               <div className="space-y-4 text-gray-300 leading-relaxed mb-8">
                 <p>Do you have questions about the gym, the classes, the trial training, or your membership?</p>
 
-                <p>Visit our Helpcenter, browse through our FAQs, or let us assist you through our chat.</p>
+                <p>Visit our Helpcentre, browse through our FAQs, or let us assist you through our chat.</p>
 
-                <p>If your questions aren't answered in our Helpcenter, send us an E-Mail.</p>
+                <p>If your questions aren't answered in our Helpcentre, send us an E-Mail.</p>
 
                 <p>For business related questions, workshop or other collaborations, click on the "Collaborations" button below.</p>
 
@@ -565,7 +675,7 @@ export default function Home() {
           </p>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 lg:gap-10 mb-12 sm:mb-16">
-            {amenities.slice(0, 6).map((amenity) => (
+            {amenities.slice(0, 3).map((amenity) => (
               <div key={amenity.id} className="bg-white rounded-2xl shadow-lg hover:shadow-2xl overflow-hidden group cursor-pointer border border-gray-200 transition-all duration-500 hover-lift">
                 <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl">
                   <Image

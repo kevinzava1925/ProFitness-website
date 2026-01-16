@@ -2,8 +2,9 @@
 
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
+import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -14,6 +15,45 @@ export default function ContactPage() {
     message: ''
   });
   const [submitting, setSubmitting] = useState(false);
+  const [footerInfo, setFooterInfo] = useState({
+    gymName: 'ProFitness Gym',
+    address: '123 Fitness Street',
+    city: 'City, State 12345',
+    phone: '(123) 456-7890',
+    email: 'borrowdale@pro-fitness.co.zw',
+    hoursWeekday: '06 AM - 10 PM',
+    hoursSaturday: '08 AM - 8 PM',
+    hoursSunday: '09 AM - 6 PM',
+    locationImage: '',
+  });
+
+  useEffect(() => {
+    const loadFooterInfo = async () => {
+      try {
+        const response = await fetch(`/api/content?_=${Date.now()}`);
+        if (response.ok) {
+          const allContent = await response.json();
+          if (allContent.footer && typeof allContent.footer === 'object' && allContent.footer !== null) {
+            setFooterInfo({
+              gymName: allContent.footer.gymName || footerInfo.gymName,
+              address: allContent.footer.address || footerInfo.address,
+              city: allContent.footer.city || footerInfo.city,
+              phone: allContent.footer.phone || footerInfo.phone,
+              email: allContent.footer.email || footerInfo.email,
+              hoursWeekday: allContent.footer.hoursWeekday || footerInfo.hoursWeekday,
+              hoursSaturday: allContent.footer.hoursSaturday || footerInfo.hoursSaturday,
+              hoursSunday: allContent.footer.hoursSunday || footerInfo.hoursSunday,
+              locationImage: allContent.footer.locationImage || footerInfo.locationImage,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading footer info:', error);
+      }
+    };
+
+    loadFooterInfo();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,17 +210,20 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-bold uppercase mb-2 text-sm">Address</h3>
                       <p className="text-gray-700 leading-relaxed">
-                        ProFitness Gym<br />
-                        123 Fitness Street<br />
-                        City, State 12345
+                        {footerInfo.gymName}<br />
+                        {footerInfo.address}<br />
+                        {footerInfo.city}
                       </p>
                     </div>
 
                     <div>
                       <h3 className="font-bold uppercase mb-2 text-sm">Phone</h3>
                       <p className="text-gray-700">
-                        <a href="tel:+1234567890" className="hover:text-black">
-                          (123) 456-7890
+                        <a
+                          href={`tel:${footerInfo.phone.replace(/\s+/g, '')}`}
+                          className="hover:text-black"
+                        >
+                          {footerInfo.phone}
                         </a>
                       </p>
                     </div>
@@ -188,8 +231,8 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-bold uppercase mb-2 text-sm">Email</h3>
                       <p className="text-gray-700">
-                        <a href="mailto:borrowdale@pro-fitness.co.zw" className="hover:text-black">
-                          borrowdale@pro-fitness.co.zw
+                        <a href={`mailto:${footerInfo.email}`} className="hover:text-black">
+                          {footerInfo.email}
                         </a>
                       </p>
                     </div>
@@ -197,9 +240,9 @@ export default function ContactPage() {
                     <div>
                       <h3 className="font-bold uppercase mb-2 text-sm">Opening Hours</h3>
                       <div className="text-gray-700 space-y-1 text-sm">
-                        <p>Monday - Friday: 6:00 AM - 10:00 PM</p>
-                        <p>Saturday: 8:00 AM - 8:00 PM</p>
-                        <p>Sunday: 9:00 AM - 6:00 PM</p>
+                        <p>Monday - Friday: {footerInfo.hoursWeekday}</p>
+                        <p>Saturday: {footerInfo.hoursSaturday}</p>
+                        <p>Sunday: {footerInfo.hoursSunday}</p>
                       </div>
                     </div>
                   </div>
@@ -207,7 +250,7 @@ export default function ContactPage() {
 
                 <div className="relative aspect-video rounded-lg overflow-hidden">
                   <Image
-                    src="https://ext.same-assets.com/443545936/2894262091.webp"
+                    src={footerInfo.locationImage || DEFAULT_IMAGES.location || "https://ext.same-assets.com/443545936/2894262091.webp"}
                     alt="Location Map"
                     fill
                     className="object-cover"

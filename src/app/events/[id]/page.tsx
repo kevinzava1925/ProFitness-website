@@ -152,12 +152,6 @@ export default function EventDetailPage() {
                     </div>
                   </div>
                 )}
-                {event.description && (
-                  <div>
-                    <p className="text-gray-700 font-semibold text-base sm:text-lg mb-2">Description</p>
-                    <p className="text-gray-600 text-base sm:text-lg leading-relaxed">{event.description}</p>
-                  </div>
-                )}
               </div>
             </div>
 

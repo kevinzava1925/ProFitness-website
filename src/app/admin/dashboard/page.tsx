@@ -16,6 +16,7 @@ type ContentItem = {
   trainer?: string;
   schedule?: string[];
   headerImage?: string;
+  order?: number; // For custom ordering
 };
 
 type PricingPlan = {
@@ -25,6 +26,13 @@ type PricingPlan = {
   period: string;
   features: string[];
   popular?: boolean;
+  category?: string;
+};
+
+type PricingCategory = {
+  id: string;
+  name: string;
+  description?: string;
 };
 
 type FooterData = {
@@ -36,6 +44,7 @@ type FooterData = {
   hoursWeekday: string;
   hoursSaturday: string;
   hoursSunday: string;
+  locationImage?: string;
   instagramUrl: string;
   facebookUrl: string;
   youtubeUrl: string;
@@ -60,12 +69,20 @@ type Trainer = {
   facebookUrl?: string;
   twitterUrl?: string;
   linkedinUrl?: string;
+  order?: number; // For custom ordering
 };
 
 type HeroMedia = {
   url: string;
   type: 'image' | 'video';
 };
+
+const DEFAULT_PRICING_CATEGORIES: PricingCategory[] = [
+  { id: 'vip-all-access', name: 'VIP All Access', description: 'Unlimited access for members who want everything covered.' },
+  { id: 'regular-ride', name: 'Regular Ride', description: 'Consistent training options for routine-focused members.' },
+  { id: 'sessions', name: 'Sessions', description: 'Flexible session packs for targeted training goals.' },
+  { id: 'casuals', name: 'Casuals', description: 'Pay-as-you-go access for casual visits.' },
+];
 
 type ContactMessage = {
   id: string;
@@ -89,12 +106,14 @@ type ClassSchedule = {
 
 export default function AdminDashboard() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'homepage' | 'classes' | 'events' | 'shop' | 'partners' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities' | 'messages' | 'schedule'>('homepage');
+  const [activeTab, setActiveTab] = useState<'homepage' | 'classes' | 'events' | 'shop' | 'partners' | 'carousel' | 'pricing' | 'footer' | 'collaborations' | 'trainers' | 'amenities' | 'messages' | 'schedule'>('homepage');
   const [classes, setClasses] = useState<ContentItem[]>([]);
   const [events, setEvents] = useState<ContentItem[]>([]);
   const [shopItems, setShopItems] = useState<ContentItem[]>([]);
   const [partners, setPartners] = useState<ContentItem[]>([]);
+  const [carouselImages, setCarouselImages] = useState<ContentItem[]>([]);
   const [pricingPlans, setPricingPlans] = useState<PricingPlan[]>([]);
+  const [pricingCategories, setPricingCategories] = useState<PricingCategory[]>([]);
   const [footerData, setFooterData] = useState<FooterData | null>(null);
   const [collaborations, setCollaborations] = useState<CollaborationItem[]>([]);
   const [trainers, setTrainers] = useState<Trainer[]>([]);
@@ -111,8 +130,9 @@ export default function AdminDashboard() {
   const [editingScheduleItem, setEditingScheduleItem] = useState<ClassSchedule | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadField, setUploadField] = useState<string | null>(null);
+  const [draggedItem, setDraggedItem] = useState<string | null>(null);
 
-  // Image upload function - Upload to Supabase Storage
+  // Image upload function - Upload to Cloudinary
   const handleImageUpload = async (file: File, fieldName: string) => {
     if (!file) return;
 
@@ -131,9 +151,15 @@ export default function AdminDashboard() {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Upload to Supabase Storage via API
-      const response = await fetch('/api/upload-storage', {
+      // Get admin token for authentication
+      const token = localStorage.getItem("adminToken");
+
+      // Upload to Cloudinary via API
+      const response = await fetch('/api/upload-direct', {
         method: 'POST',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
         body: formData,
       });
 
@@ -148,7 +174,7 @@ export default function AdminDashboard() {
         } catch (parseError) {
           errorMessage = responseText || errorMessage;
         }
-        console.error('Supabase storage upload error:', { status: response.status, message: errorMessage });
+        console.error('Cloudinary upload error:', { status: response.status, message: errorMessage });
         throw new Error(errorMessage);
       }
 
@@ -156,7 +182,7 @@ export default function AdminDashboard() {
       const data = JSON.parse(responseText);
       
       if (!data.url && !data.secure_url) {
-        throw new Error('No URL returned from storage');
+        throw new Error('No URL returned from Cloudinary');
       }
       
       const imageUrl = data.url || data.secure_url;
@@ -179,7 +205,62 @@ export default function AdminDashboard() {
     }
   };
 
-  // Handle hero media upload (image or video) - Upload to Supabase Storage
+  const handleFooterImageUpload = async (file: File, fieldName: string) => {
+    if (!file || !footerData) return;
+
+    const maxSize = 20 * 1024 * 1024;
+    if (file.size > maxSize) {
+      alert(`File is too large. Maximum size is 20MB. Your file is ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+      return;
+    }
+
+    setUploading(true);
+    setUploadField(fieldName);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch('/api/upload-direct', {
+        method: 'POST',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
+        body: formData,
+      });
+
+      const responseText = await response.text();
+      if (!response.ok) {
+        let errorMessage = `Upload failed with status ${response.status}`;
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.error || errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = responseText || errorMessage;
+        }
+        console.error('Cloudinary upload error:', { status: response.status, message: errorMessage });
+        throw new Error(errorMessage);
+      }
+
+      const data = JSON.parse(responseText);
+      if (!data.url && !data.secure_url) {
+        throw new Error('No URL returned from Cloudinary');
+      }
+
+      const imageUrl = data.url || data.secure_url;
+      setFooterData({ ...footerData, [fieldName]: imageUrl });
+    } catch (error) {
+      console.error('Upload error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to upload image. Please try again.';
+      alert(`Upload failed: ${errorMessage}`);
+    } finally {
+      setUploading(false);
+      setUploadField(null);
+    }
+  };
+
+  // Handle hero media upload (image or video) - Upload to Cloudinary
   const handleHeroMediaUpload = async (file: File) => {
     if (!file) return;
 
@@ -208,9 +289,15 @@ export default function AdminDashboard() {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Upload to Supabase Storage via API
-      const response = await fetch('/api/upload-storage', {
+      // Get admin token for authentication
+      const token = localStorage.getItem("adminToken");
+
+      // Upload to Cloudinary via API
+      const response = await fetch('/api/upload-direct', {
         method: 'POST',
+        headers: {
+          ...(token && { 'Authorization': `Bearer ${token}` }),
+        },
         body: formData,
       });
 
@@ -225,7 +312,7 @@ export default function AdminDashboard() {
         } catch (parseError) {
           errorMessage = responseText || errorMessage;
         }
-        console.error('Supabase storage upload error:', { status: response.status, message: errorMessage });
+        console.error('Cloudinary upload error:', { status: response.status, message: errorMessage });
         throw new Error(errorMessage);
       }
 
@@ -233,7 +320,7 @@ export default function AdminDashboard() {
       const data = JSON.parse(responseText);
       
       if (!data.url && !data.secure_url) {
-        throw new Error('No URL returned from storage');
+        throw new Error('No URL returned from Cloudinary');
       }
       
       const mediaUrl = data.url || data.secure_url;
@@ -322,6 +409,7 @@ export default function AdminDashboard() {
   // Load data from API (with localStorage fallback)
   useEffect(() => {
     const loadContent = async () => {
+      let loadedFromApi = false;
       try {
         // Try to load from API
         const response = await fetch('/api/content');
@@ -333,7 +421,13 @@ export default function AdminDashboard() {
           if (allContent.events && Array.isArray(allContent.events)) setEvents(allContent.events);
           if (allContent.shop && Array.isArray(allContent.shop)) setShopItems(allContent.shop);
           if (allContent.partners && Array.isArray(allContent.partners)) setPartners(allContent.partners);
+          if (allContent.carousel && Array.isArray(allContent.carousel)) setCarouselImages(allContent.carousel);
           if (allContent.pricing && Array.isArray(allContent.pricing)) setPricingPlans(allContent.pricing);
+          if (allContent.pricingCategories && Array.isArray(allContent.pricingCategories)) {
+            setPricingCategories(allContent.pricingCategories);
+          } else {
+            setPricingCategories(DEFAULT_PRICING_CATEGORIES);
+          }
           // Footer and hero are single objects, not arrays
           if (allContent.footer && typeof allContent.footer === 'object') setFooterData(allContent.footer);
           if (allContent.collaborations && Array.isArray(allContent.collaborations)) setCollaborations(allContent.collaborations);
@@ -342,7 +436,7 @@ export default function AdminDashboard() {
           if (allContent.hero && typeof allContent.hero === 'object' && allContent.hero.url) setHeroMedia(allContent.hero);
           if (allContent.schedule && Array.isArray(allContent.schedule)) setClassSchedule(allContent.schedule);
           
-          return; // Successfully loaded from API
+          loadedFromApi = true;
         }
       } catch (error) {
         console.error('Error loading from API, falling back to localStorage:', error);
@@ -367,10 +461,16 @@ export default function AdminDashboard() {
       }
 
       // Fallback to localStorage
+      if (loadedFromApi) {
+        return;
+      }
       const loadedClasses = localStorage.getItem("classes");
       const loadedEvents = localStorage.getItem("events");
       const loadedShop = localStorage.getItem("shopItems");
       const loadedPartners = localStorage.getItem("partners");
+      const loadedCarousel = localStorage.getItem("carouselImages");
+
+      setPricingCategories(DEFAULT_PRICING_CATEGORIES);
 
       if (loadedClasses) setClasses(JSON.parse(loadedClasses));
       else {
@@ -404,6 +504,12 @@ export default function AdminDashboard() {
           { id: '4', name: 'Hoodie', image: 'https://ext.same-assets.com/443545936/480816838.webp' }
         ];
         setShopItems(defaultShop);
+      }
+
+      if (loadedCarousel) {
+        setCarouselImages(JSON.parse(loadedCarousel));
+      } else {
+        setCarouselImages([]);
       }
 
       if (loadedPartners) setPartners(JSON.parse(loadedPartners));
@@ -459,6 +565,7 @@ export default function AdminDashboard() {
           hoursWeekday: '06 AM - 10 PM',
           hoursSaturday: '08 AM - 8 PM',
           hoursSunday: '09 AM - 6 PM',
+          locationImage: '',
           instagramUrl: '#',
           facebookUrl: '#',
           youtubeUrl: '#',
@@ -554,14 +661,116 @@ export default function AdminDashboard() {
   };
 
   const getCurrentItems = () => {
+    let items: ContentItem[] = [];
     switch (activeTab) {
-      case 'classes': return classes;
-      case 'events': return events;
-      case 'shop': return shopItems;
-      case 'partners': return partners;
-      case 'amenities': return amenities;
+      case 'classes': items = classes; break;
+      case 'events': items = events; break;
+      case 'shop': items = shopItems; break;
+      case 'partners': items = partners; break;
+      case 'carousel': items = carouselImages; break;
+      case 'amenities': items = amenities; break;
       default: return [];
     }
+    // Sort by order field, then by id if order is not set
+    return [...items].sort((a, b) => {
+      const orderA = a.order !== undefined ? a.order : 999999;
+      const orderB = b.order !== undefined ? b.order : 999999;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.id.localeCompare(b.id);
+    });
+  };
+
+  const getItemLabel = () => {
+    switch (activeTab) {
+      case 'classes':
+        return 'class';
+      case 'events':
+        return 'event';
+      case 'shop':
+        return 'shop item';
+      case 'partners':
+        return 'partner';
+      case 'carousel':
+        return 'carousel image';
+      case 'amenities':
+        return 'amenity';
+      default:
+        return activeTab;
+    }
+  };
+
+  // Handle drag and drop reordering
+  const handleDragStart = (e: React.DragEvent, itemId: string) => {
+    setDraggedItem(itemId);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedItem || draggedItem === targetId) {
+      setDraggedItem(null);
+      return;
+    }
+
+    const items = getCurrentItems();
+    const draggedIndex = items.findIndex(item => item.id === draggedItem);
+    const targetIndex = items.findIndex(item => item.id === targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedItem(null);
+      return;
+    }
+
+    // Reorder items
+    const reorderedItems = [...items];
+    const [removed] = reorderedItems.splice(draggedIndex, 1);
+    reorderedItems.splice(targetIndex, 0, removed);
+
+    // Update order values
+    const updatedItems = reorderedItems.map((item, index) => ({
+      ...item,
+      order: index
+    }));
+
+    // Update state and save
+    try {
+      switch (activeTab) {
+        case 'classes':
+          setClasses(updatedItems);
+          await saveContentToAPI('classes', updatedItems);
+          break;
+        case 'events':
+          setEvents(updatedItems);
+          await saveContentToAPI('events', updatedItems);
+          break;
+        case 'shop':
+          setShopItems(updatedItems);
+          await saveContentToAPI('shop', updatedItems);
+          break;
+        case 'partners':
+          setPartners(updatedItems);
+          await saveContentToAPI('partners', updatedItems);
+          break;
+        case 'carousel':
+          setCarouselImages(updatedItems);
+          await saveContentToAPI('carousel', updatedItems);
+          break;
+        case 'amenities':
+          setAmenities(updatedItems);
+          await saveContentToAPI('amenities', updatedItems);
+          break;
+      }
+    } catch (error) {
+      console.error('Error reordering items:', error);
+      alert('Failed to reorder items. Please try again.');
+    }
+
+    setDraggedItem(null);
   };
 
   const handleDelete = async (id: string) => {
@@ -591,6 +800,11 @@ export default function AdminDashboard() {
           setPartners(newPartners);
           await saveContentToAPI('partners', newPartners);
           break;
+        case 'carousel':
+          const newCarousel = updateState(carouselImages);
+          setCarouselImages(newCarousel);
+          await saveContentToAPI('carousel', newCarousel);
+          break;
         case 'amenities':
           const newAmenities = updateState(amenities);
           setAmenities(newAmenities);
@@ -609,6 +823,11 @@ export default function AdminDashboard() {
   };
 
   const handleAdd = () => {
+    const currentItems = getCurrentItems();
+    const maxOrder = currentItems.length > 0 
+      ? Math.max(...currentItems.map(item => item.order || 0))
+      : -1;
+    
     setEditingItem({
       id: Date.now().toString(),
       name: '',
@@ -618,7 +837,8 @@ export default function AdminDashboard() {
       benefits: [],
       trainer: '',
       schedule: [],
-      headerImage: ''
+      headerImage: '',
+      order: maxOrder + 1
     });
     setIsEditing(true);
   };
@@ -657,6 +877,11 @@ export default function AdminDashboard() {
           setPartners(newPartners);
           await saveContentToAPI('partners', newPartners);
           break;
+        case 'carousel':
+          const newCarousel = updateItems(carouselImages);
+          setCarouselImages(newCarousel);
+          await saveContentToAPI('carousel', newCarousel);
+          break;
         case 'amenities':
           const newAmenities = updateItems(amenities);
           setAmenities(newAmenities);
@@ -685,13 +910,15 @@ export default function AdminDashboard() {
   };
 
   const handleAddPlan = () => {
+    const fallbackCategory = pricingCategories[0]?.name || 'VIP All Access';
     setEditingPlan({
       id: Date.now().toString(),
       name: '',
       price: '',
       period: 'per month',
       features: [],
-      popular: false
+      popular: false,
+      category: fallbackCategory
     });
     setIsEditing(true);
   };
@@ -705,13 +932,18 @@ export default function AdminDashboard() {
     if (!editingPlan) return;
 
     try {
+      const fallbackCategory = pricingCategories[0]?.name || 'VIP All Access';
+      const planToSave = {
+        ...editingPlan,
+        category: editingPlan.category || fallbackCategory,
+      };
       const exists = pricingPlans.find(plan => plan.id === editingPlan.id);
       let newPlans: PricingPlan[];
       
       if (exists) {
-        newPlans = pricingPlans.map(plan => plan.id === editingPlan.id ? editingPlan : plan);
+        newPlans = pricingPlans.map(plan => plan.id === editingPlan.id ? planToSave : plan);
       } else {
-        newPlans = [...pricingPlans, editingPlan];
+        newPlans = [...pricingPlans, planToSave];
       }
 
       setPricingPlans(newPlans);
@@ -721,6 +953,53 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error saving plan:', error);
       alert('Failed to save plan. Please try again.');
+    }
+  };
+
+  const handleAddPricingCategory = () => {
+    const newCategory: PricingCategory = {
+      id: Date.now().toString(),
+      name: '',
+      description: '',
+    };
+    setPricingCategories([...pricingCategories, newCategory]);
+  };
+
+  const updatePricingCategory = (id: string, field: 'name' | 'description', value: string) => {
+    setPricingCategories((prev) =>
+      prev.map((category) =>
+        category.id === id ? { ...category, [field]: value } : category
+      )
+    );
+  };
+
+  const handleRemovePricingCategory = async (id: string) => {
+    if (!confirm('Remove this category? Plans in this category will be moved to the first category.')) return;
+    const updatedCategories = pricingCategories.filter((category) => category.id !== id);
+    const fallbackCategory = updatedCategories[0]?.name || 'VIP All Access';
+    const updatedPlans = pricingPlans.map((plan) =>
+      plan.category === pricingCategories.find((c) => c.id === id)?.name
+        ? { ...plan, category: fallbackCategory }
+        : plan
+    );
+
+    try {
+      setPricingCategories(updatedCategories);
+      setPricingPlans(updatedPlans);
+      await saveContentToAPI('pricingCategories', updatedCategories);
+      await saveContentToAPI('pricing', updatedPlans);
+    } catch (error) {
+      console.error('Error updating categories:', error);
+      alert('Failed to update categories. Please try again.');
+    }
+  };
+
+  const handleSavePricingCategories = async () => {
+    try {
+      await saveContentToAPI('pricingCategories', pricingCategories);
+    } catch (error) {
+      console.error('Error saving categories:', error);
+      alert('Failed to save categories. Please try again.');
     }
   };
 
@@ -813,7 +1092,53 @@ export default function AdminDashboard() {
   };
 
   // Trainer handlers
+  const handleDropTrainer = async (e: React.DragEvent, targetId: string) => {
+    e.preventDefault();
+    if (!draggedItem || draggedItem === targetId) {
+      setDraggedItem(null);
+      return;
+    }
+
+    const sortedTrainers = [...trainers].sort((a, b) => {
+      const orderA = a.order !== undefined ? a.order : 999999;
+      const orderB = b.order !== undefined ? b.order : 999999;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.id.localeCompare(b.id);
+    });
+
+    const draggedIndex = sortedTrainers.findIndex(trainer => trainer.id === draggedItem);
+    const targetIndex = sortedTrainers.findIndex(trainer => trainer.id === targetId);
+
+    if (draggedIndex === -1 || targetIndex === -1) {
+      setDraggedItem(null);
+      return;
+    }
+
+    const reorderedTrainers = [...sortedTrainers];
+    const [removed] = reorderedTrainers.splice(draggedIndex, 1);
+    reorderedTrainers.splice(targetIndex, 0, removed);
+
+    const updatedTrainers = reorderedTrainers.map((trainer, index) => ({
+      ...trainer,
+      order: index
+    }));
+
+    try {
+      setTrainers(updatedTrainers);
+      await saveContentToAPI('trainers', updatedTrainers);
+    } catch (error) {
+      console.error('Error reordering trainers:', error);
+      alert('Failed to reorder trainers. Please try again.');
+    }
+
+    setDraggedItem(null);
+  };
+
   const handleAddTrainer = () => {
+    const maxOrder = trainers.length > 0 
+      ? Math.max(...trainers.map(t => t.order || 0))
+      : -1;
+    
     setEditingTrainer({
       id: Date.now().toString(),
       name: '',
@@ -823,7 +1148,8 @@ export default function AdminDashboard() {
       instagramUrl: '',
       facebookUrl: '',
       twitterUrl: '',
-      linkedinUrl: ''
+      linkedinUrl: '',
+      order: maxOrder + 1
     });
     setIsEditing(true);
   };
@@ -981,7 +1307,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow mb-6">
           <div className="border-b border-gray-200">
             <nav className="flex -mb-px overflow-x-auto">
-              {(['homepage', 'classes', 'events', 'shop', 'partners', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities', 'messages', 'schedule'] as const).map((tab) => (
+              {(['homepage', 'classes', 'events', 'shop', 'partners', 'carousel', 'pricing', 'footer', 'collaborations', 'trainers', 'amenities', 'messages', 'schedule'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
@@ -1107,6 +1433,55 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
+              <div className="bg-white border border-gray-200 rounded-lg p-6 mb-8">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold uppercase">Pricing Categories</h3>
+                  <button
+                    type="button"
+                    onClick={handleAddPricingCategory}
+                    className="bg-gray-200 text-black px-4 py-2 text-xs font-bold uppercase hover:bg-gray-300 transition-colors"
+                  >
+                    Add Category
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {pricingCategories.map((category) => (
+                    <div key={category.id} className="grid grid-cols-1 md:grid-cols-[1fr_2fr_auto] gap-3 items-center">
+                      <input
+                        type="text"
+                        value={category.name}
+                        onChange={(e) => updatePricingCategory(category.id, 'name', e.target.value)}
+                        placeholder="Category name"
+                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                      />
+                      <input
+                        type="text"
+                        value={category.description || ''}
+                        onChange={(e) => updatePricingCategory(category.id, 'description', e.target.value)}
+                        placeholder="Short description (optional)"
+                        className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => handleRemovePricingCategory(category.id)}
+                        className="bg-red-600 text-white px-4 py-2 text-xs font-bold uppercase hover:bg-red-700 transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex justify-end mt-4">
+                  <button
+                    type="button"
+                    onClick={handleSavePricingCategories}
+                    className="bg-black text-white px-6 py-2 text-xs font-bold uppercase hover:bg-gray-800 transition-colors"
+                  >
+                    Save Categories
+                  </button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {pricingPlans.map((plan) => (
                   <div key={plan.id} className={`border-2 rounded-lg overflow-hidden ${plan.popular ? 'border-black' : 'border-gray-200'}`}>
@@ -1117,6 +1492,11 @@ export default function AdminDashboard() {
                     )}
                     <div className="p-6">
                       <h3 className="text-2xl font-black uppercase mb-2">{plan.name}</h3>
+                      {plan.category && (
+                        <p className="text-xs font-semibold uppercase text-profitness-brown mb-3">
+                          {plan.category}
+                        </p>
+                      )}
                       <div className="mb-4">
                         <span className="text-3xl font-black">{plan.price}</span>
                         <span className="text-gray-600 ml-2 text-sm">{plan.period}</span>
@@ -1258,8 +1638,26 @@ export default function AdminDashboard() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {trainers.map((trainer) => (
-                  <div key={trainer.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                {[...trainers].sort((a, b) => {
+                  const orderA = a.order !== undefined ? a.order : 999999;
+                  const orderB = b.order !== undefined ? b.order : 999999;
+                  if (orderA !== orderB) return orderA - orderB;
+                  return a.id.localeCompare(b.id);
+                }).map((trainer) => (
+                  <div 
+                    key={trainer.id} 
+                    className="border border-gray-200 rounded-lg overflow-hidden relative group"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, trainer.id)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDropTrainer(e, trainer.id)}
+                  >
+                    {/* Drag Handle */}
+                    <div className="absolute top-2 right-2 z-10 bg-black/70 text-white p-2 rounded cursor-move opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                      </svg>
+                    </div>
                     <div className="relative aspect-square bg-gray-100">
                       <Image
                         src={trainer.image}
@@ -1407,7 +1805,20 @@ export default function AdminDashboard() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {getCurrentItems().map((item) => (
-                  <div key={item.id} className="border border-gray-200 rounded-lg overflow-hidden">
+                  <div 
+                    key={item.id} 
+                    className="border border-gray-200 rounded-lg overflow-hidden relative group"
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, item.id)}
+                    onDragOver={handleDragOver}
+                    onDrop={(e) => handleDrop(e, item.id)}
+                  >
+                    {/* Drag Handle */}
+                    <div className="absolute top-2 right-2 z-10 bg-black/70 text-white p-2 rounded cursor-move opacity-0 group-hover:opacity-100 transition-opacity">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                      </svg>
+                    </div>
                     <div className="relative aspect-video bg-gray-100">
                       <Image
                         src={item.image}
@@ -1656,7 +2067,7 @@ export default function AdminDashboard() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-2xl font-bold uppercase mb-6">
-              {editingItem.id && getCurrentItems().find(i => i.id === editingItem.id) ? 'Edit' : 'Add'} {activeTab.slice(0, -1)}
+              {editingItem.id && getCurrentItems().find(i => i.id === editingItem.id) ? 'Edit' : 'Add'} {getItemLabel()}
             </h3>
 
             <div className="space-y-4">
@@ -1844,6 +2255,36 @@ export default function AdminDashboard() {
                   className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium mb-2">Category</label>
+                {pricingCategories.length > 0 ? (
+                  <select
+                    value={editingPlan.category || ''}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, category: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                  >
+                    <option value="" disabled>
+                      Select a category
+                    </option>
+                    {pricingCategories.map((category) => (
+                      <option key={category.id} value={category.name}>
+                        {category.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={editingPlan.category || ''}
+                    onChange={(e) => setEditingPlan({ ...editingPlan, category: e.target.value })}
+                    className="w-full px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="Category name"
+                  />
+                )}
+                <p className="text-xs text-gray-500 mt-1">
+                  Manage pricing categories in the section above.
+                </p>
+              </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -2024,6 +2465,33 @@ export default function AdminDashboard() {
                     placeholder="09 AM - 6 PM"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">Contact Page Image</label>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={footerData.locationImage || ''}
+                    onChange={(e) => setFooterData({ ...footerData, locationImage: e.target.value })}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded focus:outline-none focus:border-black"
+                    placeholder="https://... or upload image"
+                  />
+                  <label className="bg-black text-white px-4 py-2 rounded cursor-pointer hover:bg-gray-800 transition-colors whitespace-nowrap">
+                    {uploading && uploadField === 'locationImage' ? 'Uploading...' : 'Upload'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) handleFooterImageUpload(file, 'locationImage');
+                      }}
+                      disabled={uploading}
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-gray-500 mt-1">Used on the Contact page image.</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4">

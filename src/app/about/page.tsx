@@ -1,6 +1,9 @@
+'use client';
+
 import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
 import Image from "next/image";
+import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 export default function AboutPage() {
   return (
@@ -24,7 +27,7 @@ export default function AboutPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-start">
               <div className="relative aspect-[4/3] lg:sticky lg:top-24">
                 <Image
-                  src="https://ext.same-assets.com/443545936/2484507683.webp"
+                  src={DEFAULT_IMAGES.about || "https://ext.same-assets.com/443545936/2484507683.webp"}
                   alt="About ProFitness Gym"
                   fill
                   className="object-cover grayscale rounded-lg"

@@ -60,7 +60,7 @@ export default function ClassesSchedulePage() {
               <span className="gradient-underline">Class Schedule</span>
             </h1>
             <p className="text-center text-gray-300 text-base sm:text-lg max-w-3xl mx-auto leading-relaxed px-2 sm:px-0">
-              View our weekly class schedule and book your favorite classes.
+              View our weekly class schedule and book your favourite classes.
             </p>
           </div>
         </section>
@@ -127,7 +127,7 @@ export default function ClassesSchedulePage() {
                             </span>
                           </td>
                           <td className="px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
-                            <Link href="/help" className="bg-black text-white px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold uppercase hover:bg-gray-800 transition-colors w-full sm:w-auto inline-block text-center">
+                            <Link href="/technogym-app" className="bg-black text-white px-3 sm:px-4 py-1.5 sm:py-2 text-xs font-bold uppercase hover:bg-gray-800 transition-colors w-full sm:w-auto inline-block text-center">
                               Book
                             </Link>
                           </td>
