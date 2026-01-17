@@ -4,7 +4,6 @@ import Navigation from "../components/Navigation";
 import Footer from "../components/Footer";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
 const DEFAULT_FOOTER_INFO = {
   gymName: 'ProFitness Gym',
@@ -251,12 +250,14 @@ export default function ContactPage() {
                 </div>
 
                 <div className="relative aspect-video rounded-lg overflow-hidden">
-                  <Image
-                    src={footerInfo.locationImage || DEFAULT_IMAGES.location || "https://ext.same-assets.com/443545936/2894262091.webp"}
-                    alt="Location Map"
-                    fill
-                    className="object-cover"
-                  />
+                  {footerInfo.locationImage ? (
+                    <Image
+                      src={footerInfo.locationImage}
+                      alt="Location Map"
+                      fill
+                      className="object-cover"
+                    />
+                  ) : null}
                 </div>
               </div>
             </div>

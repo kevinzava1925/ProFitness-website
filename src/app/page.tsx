@@ -611,7 +611,7 @@ export default function Home() {
       )}
 
       {/* FAQ & Contact Section */}
-      <section className="py-16 sm:py-20 lg:py-24 bg-gradient-to-br from-black via-gray-900 to-black text-white">
+      <section className="py-16 sm:py-20 lg:py-24 bg-black text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-12 lg:gap-16">
             <div>
@@ -652,7 +652,7 @@ export default function Home() {
 
             <div className="relative aspect-video lg:aspect-square rounded-2xl overflow-hidden shadow-2xl">
               <Image
-                src="https://ext.same-assets.com/443545936/2894262091.webp"
+                src="https://res.cloudinary.com/dvdogsvf6/image/upload/v1767933502/DSCF9779-32_1_f73fkh.jpg"
                 alt="Location Map"
                 fill
                 className="object-cover"
