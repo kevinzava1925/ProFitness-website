@@ -47,11 +47,11 @@ export const DEFAULT_CONTENT = {
     { id: "2", name: "Nutrition Company B", image: DEFAULT_IMAGES.collaborations.brandB, description: "Health supplements and nutrition products" },
   ],
   classSchedule: [
-    { id: "1", name: "Morning Yoga", trainer: "Sarah Johnson", time: "07:00", day: "Monday", duration: "60 min", level: "All Levels" },
-    { id: "2", name: "HIIT Training", trainer: "Mike Chen", time: "08:00", day: "Monday", duration: "45 min", level: "Intermediate" },
-    { id: "3", name: "Strength Training", trainer: "David Martinez", time: "18:00", day: "Monday", duration: "60 min", level: "All Levels" },
-    { id: "4", name: "Cardio Blast", trainer: "Emma Wilson", time: "07:00", day: "Tuesday", duration: "45 min", level: "Beginner" },
-    { id: "5", name: "Pilates", trainer: "Sarah Johnson", time: "19:00", day: "Tuesday", duration: "50 min", level: "All Levels" },
+    { id: "1", name: "Morning Yoga", instructor: "Sarah Johnson", time: "07:00", day: "Monday", duration: "60 min", level: "All Levels" },
+    { id: "2", name: "HIIT Training", instructor: "Mike Chen", time: "08:00", day: "Monday", duration: "45 min", level: "Intermediate" },
+    { id: "3", name: "Strength Training", instructor: "David Martinez", time: "18:00", day: "Monday", duration: "60 min", level: "All Levels" },
+    { id: "4", name: "Cardio Blast", instructor: "Emma Wilson", time: "07:00", day: "Tuesday", duration: "45 min", level: "Beginner" },
+    { id: "5", name: "Pilates", instructor: "Sarah Johnson", time: "19:00", day: "Tuesday", duration: "50 min", level: "All Levels" },
   ],
 };
 
