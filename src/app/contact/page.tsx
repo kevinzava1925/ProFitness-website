@@ -6,6 +6,18 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { DEFAULT_IMAGES } from "@/config/defaultImages";
 
+const DEFAULT_FOOTER_INFO = {
+  gymName: 'ProFitness Gym',
+  address: '123 Fitness Street',
+  city: 'City, State 12345',
+  phone: '(123) 456-7890',
+  email: 'borrowdale@pro-fitness.co.zw',
+  hoursWeekday: '06 AM - 10 PM',
+  hoursSaturday: '08 AM - 8 PM',
+  hoursSunday: '09 AM - 6 PM',
+  locationImage: '',
+};
+
 export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: '',
@@ -15,17 +27,7 @@ export default function ContactPage() {
     message: ''
   });
   const [submitting, setSubmitting] = useState(false);
-  const [footerInfo, setFooterInfo] = useState({
-    gymName: 'ProFitness Gym',
-    address: '123 Fitness Street',
-    city: 'City, State 12345',
-    phone: '(123) 456-7890',
-    email: 'borrowdale@pro-fitness.co.zw',
-    hoursWeekday: '06 AM - 10 PM',
-    hoursSaturday: '08 AM - 8 PM',
-    hoursSunday: '09 AM - 6 PM',
-    locationImage: '',
-  });
+  const [footerInfo, setFooterInfo] = useState(DEFAULT_FOOTER_INFO);
 
   useEffect(() => {
     const loadFooterInfo = async () => {
@@ -35,15 +37,15 @@ export default function ContactPage() {
           const allContent = await response.json();
           if (allContent.footer && typeof allContent.footer === 'object' && allContent.footer !== null) {
             setFooterInfo({
-              gymName: allContent.footer.gymName || footerInfo.gymName,
-              address: allContent.footer.address || footerInfo.address,
-              city: allContent.footer.city || footerInfo.city,
-              phone: allContent.footer.phone || footerInfo.phone,
-              email: allContent.footer.email || footerInfo.email,
-              hoursWeekday: allContent.footer.hoursWeekday || footerInfo.hoursWeekday,
-              hoursSaturday: allContent.footer.hoursSaturday || footerInfo.hoursSaturday,
-              hoursSunday: allContent.footer.hoursSunday || footerInfo.hoursSunday,
-              locationImage: allContent.footer.locationImage || footerInfo.locationImage,
+              gymName: allContent.footer.gymName || DEFAULT_FOOTER_INFO.gymName,
+              address: allContent.footer.address || DEFAULT_FOOTER_INFO.address,
+              city: allContent.footer.city || DEFAULT_FOOTER_INFO.city,
+              phone: allContent.footer.phone || DEFAULT_FOOTER_INFO.phone,
+              email: allContent.footer.email || DEFAULT_FOOTER_INFO.email,
+              hoursWeekday: allContent.footer.hoursWeekday || DEFAULT_FOOTER_INFO.hoursWeekday,
+              hoursSaturday: allContent.footer.hoursSaturday || DEFAULT_FOOTER_INFO.hoursSaturday,
+              hoursSunday: allContent.footer.hoursSunday || DEFAULT_FOOTER_INFO.hoursSunday,
+              locationImage: allContent.footer.locationImage || DEFAULT_FOOTER_INFO.locationImage,
             });
           }
         }

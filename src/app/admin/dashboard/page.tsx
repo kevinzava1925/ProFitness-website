@@ -343,7 +343,17 @@ export default function AdminDashboard() {
   };
 
   // Helper function to save content to Supabase API - NO localStorage fallback for syncing
-  const saveContentToAPI = async (type: string, data: ContentItem[] | PricingPlan[] | FooterData | HeroMedia | CollaborationItem[] | Trainer[]) => {
+  const saveContentToAPI = async (
+    type: string,
+    data:
+      | ContentItem[]
+      | PricingPlan[]
+      | PricingCategory[]
+      | FooterData
+      | HeroMedia
+      | CollaborationItem[]
+      | Trainer[]
+  ) => {
     try {
       const token = localStorage.getItem("adminToken");
       const response = await fetch('/api/content', {
