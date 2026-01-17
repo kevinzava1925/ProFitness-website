@@ -1,11 +1,11 @@
-import { SignJWT, jwtVerify } from 'jose';
+import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET || '192525';
 const JWT_EXPIRES_IN = '7d'; // Token expires in 7 days
 const encoder = new TextEncoder();
 const secretKey = encoder.encode(JWT_SECRET);
 
-export interface TokenPayload {
+export interface TokenPayload extends JWTPayload {
   userId: string;
   email: string;
   isAdmin?: boolean;
