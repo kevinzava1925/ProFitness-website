@@ -1,7 +1,9 @@
-import jwt from 'jsonwebtoken';
+import { SignJWT, jwtVerify } from 'jose';
 
 const JWT_SECRET = process.env.JWT_SECRET || '192525';
 const JWT_EXPIRES_IN = '7d'; // Token expires in 7 days
+const encoder = new TextEncoder();
+const secretKey = encoder.encode(JWT_SECRET);
 
 export interface TokenPayload {
   userId: string;
@@ -9,16 +11,18 @@ export interface TokenPayload {
   isAdmin?: boolean;
 }
 
-export function generateToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: JWT_EXPIRES_IN,
-  });
+export async function generateToken(payload: TokenPayload): Promise<string> {
+  return new SignJWT(payload)
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime(JWT_EXPIRES_IN)
+    .sign(secretKey);
 }
 
-export function verifyToken(token: string): TokenPayload | null {
+export async function verifyToken(token: string): Promise<TokenPayload | null> {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as TokenPayload;
-    return decoded;
+    const { payload } = await jwtVerify(token, secretKey);
+    return payload as TokenPayload;
   } catch (error) {
     return null;
   }

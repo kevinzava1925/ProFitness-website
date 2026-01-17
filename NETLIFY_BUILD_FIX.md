@@ -1,4 +1,4 @@
-# Netlify Build Fix - Critical Issues Resolved
+# Cloudflare Pages Build Fix - Critical Issues Resolved
 
 ## 🔴 Issues Found and Fixed
 
@@ -16,14 +16,14 @@
 
 ### 4. Memory Optimization
 **Problem**: Large builds might run out of memory  
-**Fix**: ✅ Added `NODE_OPTIONS = "--max-old-space-size=4096"` to `netlify.toml`
+**Fix**: ✅ Set `NODE_OPTIONS = "--max-old-space-size=4096"` in Cloudflare Pages environment variables
 
 ## 📋 Files Fixed
 
 1. ✅ `src/utils/supabase.ts` - Recreated (was missing)
 2. ✅ `tsconfig.json` - Fixed JSX configuration
 3. ✅ `src/app/api/content/route.ts` - Fixed TypeScript error (already done)
-4. ✅ `netlify.toml` - Added memory optimization
+4. ✅ Cloudflare Pages env var - Added memory optimization
 
 ## 🚀 Next Steps - CRITICAL
 
@@ -32,11 +32,11 @@
 # Stage all fixes
 git add src/utils/supabase.ts
 git add tsconfig.json
-git add netlify.toml
+# (No Netlify config needed on Cloudflare Pages)
 git add src/app/api/content/route.ts
 
 # Commit
-git commit -m "Fix Netlify build errors: restore supabase.ts, fix TS config, add memory optimization"
+git commit -m "Fix Cloudflare Pages build errors: restore supabase.ts, fix TS config, add memory optimization"
 ```
 
 ### Step 2: Push to GitHub
@@ -44,16 +44,16 @@ git commit -m "Fix Netlify build errors: restore supabase.ts, fix TS config, add
 git push origin main
 ```
 
-### Step 3: Verify Netlify Deployment
-- Netlify will automatically detect the push and start a new build
-- Check Netlify dashboard for build status
+### Step 3: Verify Cloudflare Pages Deployment
+- Cloudflare Pages will automatically detect the push and start a new build
+- Check Cloudflare Pages dashboard for build status
 - Build should now succeed
 
 ## ⚠️ Important Notes
 
-1. **Why Netlify showed Next.js 15.5.6**: Your local `package.json` has Next.js 16.0.7, but it hasn't been pushed to GitHub yet. After pushing, Netlify will use the correct version.
+1. **Why a mismatch appears**: If the build uses an older Next.js version, ensure `package.json` changes are pushed. Cloudflare Pages will then use the correct version.
 
-2. **Environment Variables**: Make sure these are set in Netlify:
+2. **Environment Variables**: Make sure these are set in Cloudflare Pages:
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
@@ -63,8 +63,8 @@ git push origin main
 
 ## 🔍 If Build Still Fails
 
-1. **Check Netlify Build Logs**:
-   - Go to Netlify dashboard → Deploys → Click on the failed build
+1. **Check Cloudflare Pages Build Logs**:
+   - Go to Cloudflare Pages → Deployments → Click on the failed build
    - Look for the actual error message (not just "build failed")
    - The error will show the specific file and line number
 
@@ -74,10 +74,10 @@ git push origin main
    npm run build  # Test build locally
    ```
    - If local build fails, fix the error locally first
-   - If local build succeeds but Netlify fails, check environment variables
+   - If local build succeeds but Cloudflare fails, check environment variables
 
 3. **Common Issues**:
-   - Missing environment variables → Add them in Netlify dashboard
+   - Missing environment variables → Add them in Cloudflare Pages
    - TypeScript errors → Fix locally and push
    - Memory issues → Already fixed with NODE_OPTIONS
    - Missing dependencies → Check package.json
@@ -86,9 +86,9 @@ git push origin main
 
 - [ ] All files committed
 - [ ] Changes pushed to GitHub
-- [ ] Netlify build triggered automatically
+- [ ] Cloudflare Pages build triggered automatically
 - [ ] Build completes successfully
-- [ ] Site is live at `your-site.netlify.app`
+- [ ] Site is live at `your-site.pages.dev`
 
 ---
 

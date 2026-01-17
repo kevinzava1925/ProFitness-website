@@ -1,8 +1,24 @@
-import cloudinary from '@/utils/cloudinary';
+const encoder = new TextEncoder();
+
+async function sha1Hex(input) {
+  const data = encoder.encode(input);
+  const hash = await crypto.subtle.digest('SHA-1', data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function buildSignature(params, apiSecret) {
+  const sortedKeys = Object.keys(params).sort();
+  const sortedParams = sortedKeys
+    .map((key) => `${key}=${params[key]}`)
+    .join('&');
+  return sha1Hex(sortedParams + apiSecret);
+}
 
 // Configure route to accept larger payloads (up to 50MB for base64 encoded files)
 export const maxDuration = 30; // 30 seconds max execution time
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 export async function POST(req) {
   try {
@@ -33,19 +49,37 @@ export async function POST(req) {
       }, { status: 400 });
     }
 
-    // Upload base64 image to Cloudinary
-    let uploaded;
-    try {
-      uploaded = await cloudinary.uploader.upload(image, {
-        folder: "profitness",
-        resource_type: "auto",
-      });
-    } catch (cloudinaryError) {
-      console.error('Cloudinary upload error:', cloudinaryError);
+    const timestamp = Math.round(Date.now() / 1000);
+    const signatureParams = {
+      folder: 'profitness',
+      timestamp,
+      resource_type: 'auto',
+    };
+
+    const signature = await buildSignature(signatureParams, process.env.CLOUDINARY_API_SECRET);
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/auto/upload`;
+
+    const uploadForm = new FormData();
+    uploadForm.append('file', image);
+    uploadForm.append('api_key', process.env.CLOUDINARY_API_KEY);
+    uploadForm.append('timestamp', timestamp.toString());
+    uploadForm.append('signature', signature);
+    uploadForm.append('folder', 'profitness');
+    uploadForm.append('resource_type', 'auto');
+
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'POST',
+      body: uploadForm,
+    });
+
+    const uploaded = await uploadResponse.json();
+    if (!uploadResponse.ok) {
+      console.error('Cloudinary upload error:', uploaded);
       return Response.json({ 
         error: 'Cloudinary upload failed', 
-        message: cloudinaryError.message || 'Failed to upload to Cloudinary',
-        cloudinaryError: cloudinaryError.toString()
+        message: uploaded?.error?.message || 'Failed to upload to Cloudinary',
+        cloudinaryError: uploaded?.error || uploaded
       }, { status: 500 });
     }
 

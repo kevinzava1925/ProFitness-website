@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate JWT token with admin flag
-    const token = generateToken({
+    const token = await generateToken({
       userId: 'admin',
       email: ADMIN_EMAIL,
       isAdmin: true,

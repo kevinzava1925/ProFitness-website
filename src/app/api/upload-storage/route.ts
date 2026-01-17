@@ -41,14 +41,10 @@ export async function POST(request: NextRequest) {
     const fileExt = file.name.split('.').pop();
     const fileName = `${timestamp}-${randomString}.${fileExt}`;
 
-    // Convert file to ArrayBuffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
     // Upload to Supabase Storage
     const { data, error } = await supabase.storage
       .from('profitness')
-      .upload(fileName, buffer, {
+      .upload(fileName, file, {
         contentType: file.type,
         upsert: false, // Don't overwrite existing files
       });

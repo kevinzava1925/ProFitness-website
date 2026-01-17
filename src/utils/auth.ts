@@ -18,7 +18,7 @@ export async function verifyAuth(request: NextRequest): Promise<AuthUser | null>
     }
 
     const token = authHeader.substring(7);
-    const decoded = verifyToken(token);
+    const decoded = await verifyToken(token);
     
     if (!decoded) {
       return null;

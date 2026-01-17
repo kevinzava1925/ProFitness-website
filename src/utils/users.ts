@@ -1,6 +1,5 @@
 import bcrypt from 'bcryptjs';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
-import { join } from 'path';
+import { createServerClient } from '@/utils/supabase';
 
 export interface User {
   id: string;
@@ -14,39 +13,30 @@ export interface User {
   personalTrainingSessions?: number;
 }
 
-const USERS_FILE = join(process.cwd(), 'data', 'users.json');
-
-// Ensure data directory exists
-function ensureDataDirectory() {
-  const dataDir = join(process.cwd(), 'data');
-  if (!existsSync(dataDir)) {
-    mkdirSync(dataDir, { recursive: true });
-  }
+interface UserRow {
+  id: string;
+  email: string;
+  password_hash: string;
+  name: string | null;
+  membership_type: 'Basic' | 'Premium' | 'Elite';
+  membership_status: 'Active' | 'Inactive' | 'Expired';
+  created_at: string;
+  upcoming_classes: number | null;
+  personal_training_sessions: number | null;
 }
 
-// Initialize users file if it doesn't exist
-function initUsersFile() {
-  ensureDataDirectory();
-  if (!existsSync(USERS_FILE)) {
-    writeFileSync(USERS_FILE, JSON.stringify([], null, 2));
-  }
-}
-
-// Read users from file
-function readUsers(): User[] {
-  initUsersFile();
-  try {
-    const data = readFileSync(USERS_FILE, 'utf-8');
-    return JSON.parse(data);
-  } catch (error) {
-    return [];
-  }
-}
-
-// Write users to file
-function writeUsers(users: User[]): void {
-  ensureDataDirectory();
-  writeFileSync(USERS_FILE, JSON.stringify(users, null, 2));
+function mapRowToUser(row: UserRow): User {
+  return {
+    id: row.id,
+    email: row.email,
+    passwordHash: row.password_hash,
+    name: row.name ?? undefined,
+    membershipType: row.membership_type,
+    membershipStatus: row.membership_status,
+    createdAt: row.created_at,
+    upcomingClasses: row.upcoming_classes ?? undefined,
+    personalTrainingSessions: row.personal_training_sessions ?? undefined,
+  };
 }
 
 // Hash password
@@ -65,60 +55,113 @@ export async function createUser(
   password: string,
   name?: string
 ): Promise<User> {
-  const users = readUsers();
-  
-  // Check if user already exists
-  if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+  const supabase = createServerClient();
+  const normalizedEmail = email.toLowerCase();
+
+  const { data: existingUser } = await supabase
+    .from('app_users')
+    .select('id')
+    .eq('email', normalizedEmail)
+    .maybeSingle();
+
+  if (existingUser) {
     throw new Error('User with this email already exists');
   }
 
   const passwordHash = await hashPassword(password);
-  const newUser: User = {
-    id: `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    email: email.toLowerCase(),
-    passwordHash,
+  const newUserRow = {
+    id: crypto.randomUUID(),
+    email: normalizedEmail,
+    password_hash: passwordHash,
     name: name || email.split('@')[0],
-    membershipType: 'Basic',
-    membershipStatus: 'Active',
-    createdAt: new Date().toISOString(),
-    upcomingClasses: 0,
-    personalTrainingSessions: 0,
+    membership_type: 'Basic',
+    membership_status: 'Active',
+    created_at: new Date().toISOString(),
+    upcoming_classes: 0,
+    personal_training_sessions: 0,
   };
 
-  users.push(newUser);
-  writeUsers(users);
-  return newUser;
+  const { data, error } = await supabase
+    .from('app_users')
+    .insert(newUserRow)
+    .select()
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message || 'Failed to create user');
+  }
+
+  return mapRowToUser(data as UserRow);
 }
 
 // Find user by email
-export function findUserByEmail(email: string): User | undefined {
-  const users = readUsers();
-  return users.find(u => u.email.toLowerCase() === email.toLowerCase());
+export async function findUserByEmail(email: string): Promise<User | undefined> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from('app_users')
+    .select('*')
+    .eq('email', email.toLowerCase())
+    .maybeSingle();
+
+  if (error || !data) {
+    return undefined;
+  }
+
+  return mapRowToUser(data as UserRow);
 }
 
 // Find user by ID
-export function findUserById(id: string): User | undefined {
-  const users = readUsers();
-  return users.find(u => u.id === id);
+export async function findUserById(id: string): Promise<User | undefined> {
+  const supabase = createServerClient();
+  const { data, error } = await supabase
+    .from('app_users')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+
+  if (error || !data) {
+    return undefined;
+  }
+
+  return mapRowToUser(data as UserRow);
 }
 
 // Update user
-export function updateUser(userId: string, updates: Partial<User>): User | null {
-  const users = readUsers();
-  const userIndex = users.findIndex(u => u.id === userId);
-  
-  if (userIndex === -1) {
+export async function updateUser(userId: string, updates: Partial<User>): Promise<User | null> {
+  const supabase = createServerClient();
+  const updatePayload: Partial<UserRow> = {
+    email: updates.email,
+    password_hash: updates.passwordHash,
+    name: updates.name ?? null,
+    membership_type: updates.membershipType,
+    membership_status: updates.membershipStatus,
+    upcoming_classes: updates.upcomingClasses ?? null,
+    personal_training_sessions: updates.personalTrainingSessions ?? null,
+  };
+
+  Object.keys(updatePayload).forEach((key) => {
+    if (updatePayload[key as keyof UserRow] === undefined) {
+      delete updatePayload[key as keyof UserRow];
+    }
+  });
+
+  const { data, error } = await supabase
+    .from('app_users')
+    .update(updatePayload)
+    .eq('id', userId)
+    .select()
+    .single();
+
+  if (error || !data) {
     return null;
   }
 
-  users[userIndex] = { ...users[userIndex], ...updates };
-  writeUsers(users);
-  return users[userIndex];
+  return mapRowToUser(data as UserRow);
 }
 
 // Authenticate user
 export async function authenticateUser(email: string, password: string): Promise<User | null> {
-  const user = findUserByEmail(email);
+  const user = await findUserByEmail(email);
   if (!user) {
     return null;
   }

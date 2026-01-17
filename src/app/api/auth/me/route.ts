@@ -13,7 +13,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const payload = verifyToken(token);
+    const payload = await verifyToken(token);
 
     if (!payload) {
       return NextResponse.json(
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const user = findUserById(payload.userId);
+    const user = await findUserById(payload.userId);
 
     if (!user) {
       return NextResponse.json(

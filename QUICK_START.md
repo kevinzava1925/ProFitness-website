@@ -16,7 +16,7 @@ This will install:
 
 ## Step 2: Set Environment Variables
 
-### For Production (Netlify/Vercel)
+### For Production (Cloudflare Pages)
 
 Go to your deployment platform and add these environment variables:
 
@@ -51,25 +51,12 @@ cp .env.example .env.local
 # Then edit .env.local with your actual values
 ```
 
-## Step 3: Deploy
+## Step 3: Deploy (Cloudflare Pages)
 
-### Netlify
-```bash
-# Push to Git (if connected)
-git push
-
-# Or deploy manually
-netlify deploy --prod
-```
-
-### Vercel
-```bash
-# Push to Git (if connected)
-git push
-
-# Or deploy manually
-vercel --prod
-```
+1. Connect your Git repository in Cloudflare Pages
+2. Set build command: `npm run build && npm run pages:build`
+3. Set output directory: `.vercel/output/static`
+4. Push to your default branch to deploy
 
 ## Step 4: Test
 

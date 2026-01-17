@@ -10,7 +10,7 @@
 
 ### Required Environment Variables
 
-Copy these to your deployment platform (Netlify/Vercel):
+Copy these to your deployment platform (Cloudflare Pages):
 
 ```bash
 # Authentication
@@ -42,30 +42,19 @@ CONTACT_EMAIL=borrowdale@pro-fitness.co.zw
 npm install
 ```
 
-### 3. Set Environment Variables
+### 3. Set Environment Variables (Cloudflare Pages)
 
-**For Netlify:**
-1. Go to your site dashboard
-2. Navigate to: Site Settings → Environment Variables
-3. Add each variable from the list above
-
-**For Vercel:**
-1. Go to your project dashboard
+1. Go to your project in Cloudflare Pages
 2. Navigate to: Settings → Environment Variables
 3. Add each variable from the list above
-4. Select environments: Production, Preview, Development
+4. Apply to both Production and Preview
 
-### 4. Build & Deploy
+### 4. Build & Deploy (Cloudflare Pages)
 
-**Netlify:**
-- Push to your connected Git repository
-- Netlify will automatically build and deploy
-- Or use: `netlify deploy --prod`
-
-**Vercel:**
-- Push to your connected Git repository
-- Vercel will automatically build and deploy
-- Or use: `vercel --prod`
+- Connect your Git repository in Cloudflare Pages
+- Set build command: `npm run build && npm run pages:build`
+- Set build output directory: `.vercel/output/static`
+- Trigger a deploy (or push to your default branch)
 
 ### 5. Post-Deployment Testing
 

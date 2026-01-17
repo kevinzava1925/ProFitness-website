@@ -9,14 +9,14 @@ Upload failed: Internal Error. ID: 01KE8Z1E3CGE36S6VKB4G8ZC58
 
 ## ✅ Solution
 
-Your code uses **Supabase Storage**, not Cloudinary. The error is because Supabase environment variables are missing or incorrect in Netlify.
+Your code uses **Supabase Storage** for this upload path. The error is because Supabase environment variables are missing or incorrect in Cloudflare Pages.
 
-## 🔧 Step 1: Add Supabase Environment Variables in Netlify
+## 🔧 Step 1: Add Supabase Environment Variables in Cloudflare Pages
 
-1. **Go to Netlify Dashboard**
-   - Visit: https://app.netlify.com
-   - Click on your site
-   - Go to **Site settings** → **Environment variables**
+1. **Go to Cloudflare Pages**
+   - Visit: https://dash.cloudflare.com/
+   - Select your Pages project
+   - Go to **Settings** → **Environment variables**
 
 2. **Add These Required Variables** (for Production, Deploy previews, and Branch deploys):
 
@@ -39,9 +39,9 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
      - **anon public** key → Use for `NEXT_PUBLIC_SUPABASE_ANON_KEY`
      - **service_role** key → Use for `SUPABASE_SERVICE_ROLE_KEY` ⚠️ (Keep this secret!)
 
-3. **Add in Netlify**:
+3. **Add in Cloudflare Pages**:
    - Click **"Add variable"** for each one
-   - Make sure to add them for **Production**, **Deploy previews**, and **Branch deploys**
+   - Make sure to add them for **Production** and **Preview**
    - Click **"Save"**
 
 ## 🔧 Step 2: Create Supabase Storage Bucket
@@ -73,10 +73,10 @@ The code expects a bucket named `profitness`. Make sure it exists:
 
 After adding environment variables:
 
-1. **Go to Netlify Dashboard**
-   - Click on your site
-   - Go to **Deploys** tab
-   - Click **"Trigger deploy"** → **"Deploy site"**
+1. **Go to Cloudflare Pages**
+   - Open your project
+   - Go to **Deployments**
+   - Click **"Retry deployment"** or push a new commit
 
 2. **Wait for Build**
    - Build will take 2-3 minutes
@@ -85,7 +85,7 @@ After adding environment variables:
 ## ✅ Step 4: Test Upload Again
 
 1. **Go to Admin Dashboard**
-   - Visit: `https://your-site.netlify.app/admin/dashboard`
+   - Visit: `https://your-site.pages.dev/admin/dashboard`
 
 2. **Try Uploading an Image**
    - Upload should work now!
@@ -94,8 +94,8 @@ After adding environment variables:
 
 ### Still Getting Errors?
 
-1. **Check Netlify Build Logs**:
-   - Go to Deploys → Click latest deploy
+1. **Check Cloudflare Pages Build Logs**:
+   - Go to Deployments → Click latest deploy
    - Look for errors related to Supabase
    - Check if environment variables are being read
 
@@ -124,7 +124,7 @@ After adding environment variables:
 - **Fix**: Make sure bucket is public OR set proper RLS policies
 
 **Issue**: "Database not configured"
-- **Fix**: Add `SUPABASE_SERVICE_ROLE_KEY` in Netlify
+- **Fix**: Add `SUPABASE_SERVICE_ROLE_KEY` in Cloudflare Pages
 
 **Issue**: "Failed to get public URL"
 - **Fix**: Make sure bucket is set to "Public" in Supabase
@@ -141,16 +141,16 @@ If you want to use Cloudinary instead, you'd need to:
 2. Add Cloudinary environment variables
 3. Update the code to use Cloudinary API
 
-But for now, **Supabase Storage is already set up** - you just need to add the environment variables in Netlify!
+But for now, **Supabase Storage is already set up** - you just need to add the environment variables in Cloudflare Pages!
 
 ## ✅ Checklist
 
-- [ ] Added `NEXT_PUBLIC_SUPABASE_URL` in Netlify
-- [ ] Added `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Netlify
-- [ ] Added `SUPABASE_SERVICE_ROLE_KEY` in Netlify
+- [ ] Added `NEXT_PUBLIC_SUPABASE_URL` in Cloudflare Pages
+- [ ] Added `NEXT_PUBLIC_SUPABASE_ANON_KEY` in Cloudflare Pages
+- [ ] Added `SUPABASE_SERVICE_ROLE_KEY` in Cloudflare Pages
 - [ ] Created `profitness` bucket in Supabase Storage
 - [ ] Made bucket public (or set proper policies)
-- [ ] Redeployed site in Netlify
+- [ ] Redeployed site in Cloudflare Pages
 - [ ] Tested image upload
 
 ---

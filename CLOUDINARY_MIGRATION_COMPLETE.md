@@ -18,11 +18,11 @@ Your image uploads have been switched back to **Cloudinary** from Supabase Stora
 - **`/api/upload-direct`** - Now used for all image/video uploads
   - Supports FormData uploads
   - Handles large files (up to 500MB for videos)
-  - Uses Cloudinary's upload_stream for efficient large file handling
+  - Uses Cloudinary signed uploads via direct HTTP request
 
 ## 🔐 Required Environment Variables
 
-Make sure these are set in **Netlify**:
+Make sure these are set in **Cloudflare Pages**:
 
 ### Cloudinary (Required)
 ```
@@ -41,12 +41,12 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 
 **Note**: Supabase is still used for storing content data (classes, events, etc.), but images are now uploaded to Cloudinary.
 
-## 📋 How to Add Cloudinary Variables in Netlify
+## 📋 How to Add Cloudinary Variables in Cloudflare Pages
 
-1. **Go to Netlify Dashboard**
-   - Visit: https://app.netlify.com
-   - Click on your site
-   - Go to **Site settings** → **Environment variables**
+1. **Go to Cloudflare Pages**
+   - Visit: https://dash.cloudflare.com/
+   - Select your Pages project
+   - Go to **Settings** → **Environment variables**
 
 2. **Add Cloudinary Variables**
    - Click **"Add variable"** for each:
@@ -65,8 +65,8 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
      - **API Secret** → `CLOUDINARY_API_SECRET` ⚠️ (Keep this secret!)
 
 4. **Redeploy**
-   - After adding variables, go to **Deploys** tab
-   - Click **"Trigger deploy"** → **"Deploy site"**
+   - After adding variables, go to **Deployments**
+   - Click **"Retry deployment"**
 
 ## ✅ Benefits of Cloudinary
 
@@ -78,21 +78,21 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 
 ## 🚀 Next Steps
 
-1. **Add Cloudinary environment variables** in Netlify (see above)
+1. **Add Cloudinary environment variables** in Cloudflare Pages (see above)
 2. **Redeploy** your site
 3. **Test image uploads** in the admin dashboard
 4. **Verify** larger images upload successfully
 
 ## 📝 File Size Limits
 
-- **Images**: Up to 200MB
-- **Videos**: Up to 500MB
+- **Images**: Up to 20MB
+- **Videos**: Up to 200MB
 
-These limits are much higher than Supabase Storage, which should solve your large image upload issues!
+These limits support large uploads while keeping request sizes manageable on Workers.
 
 ---
 
-**Status**: ✅ Migration complete! Add Cloudinary variables in Netlify and redeploy.
+**Status**: ✅ Migration complete! Add Cloudinary variables in Cloudflare Pages and redeploy.
 
 
 

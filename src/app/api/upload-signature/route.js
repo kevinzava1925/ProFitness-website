@@ -1,5 +1,12 @@
-import cloudinary from '@/utils/cloudinary';
-import crypto from 'crypto';
+const encoder = new TextEncoder();
+
+async function sha1Hex(input) {
+  const data = encoder.encode(input);
+  const hash = await crypto.subtle.digest('SHA-1', data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
 
 // Generate upload signature for client-side direct upload
 export async function GET(req) {
@@ -39,10 +46,7 @@ export async function GET(req) {
     const signatureString = sortedParams + process.env.CLOUDINARY_API_SECRET;
 
     // Generate SHA1 signature
-    const signature = crypto
-      .createHash('sha1')
-      .update(signatureString)
-      .digest('hex');
+    const signature = await sha1Hex(signatureString);
 
     return Response.json({
       signature,

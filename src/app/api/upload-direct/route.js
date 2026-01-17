@@ -1,8 +1,24 @@
-import cloudinary from '@/utils/cloudinary';
+const encoder = new TextEncoder();
+
+async function sha1Hex(input) {
+  const data = encoder.encode(input);
+  const hash = await crypto.subtle.digest('SHA-1', data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function buildSignature(params, apiSecret) {
+  const sortedKeys = Object.keys(params).sort();
+  const sortedParams = sortedKeys
+    .map((key) => `${key}=${params[key]}`)
+    .join('&');
+  return sha1Hex(sortedParams + apiSecret);
+}
 
 // Configure route to accept larger payloads
 export const maxDuration = 60; // 60 seconds max execution time for large videos
-export const runtime = 'nodejs';
+export const runtime = 'edge';
 
 import { requireAdmin } from '@/utils/auth';
 import { rateLimit, getClientIP } from '@/utils/rateLimit';
@@ -79,27 +95,40 @@ export async function POST(req) {
     // Determine resource type
     const resourceType = file.type.startsWith('video/') ? 'video' : 'image';
 
-    // Convert File to buffer for Cloudinary
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    const timestamp = Math.round(Date.now() / 1000);
+    const signatureParams = {
+      folder: 'profitness',
+      timestamp,
+      ...(resourceType !== 'image' ? { resource_type: resourceType } : {}),
+    };
 
-    // Upload to Cloudinary using upload_stream for large files
-    const uploaded = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
-        {
-          folder: "profitness",
-          resource_type: resourceType,
-        },
-        (error, result) => {
-          if (error) {
-            console.error('Cloudinary upload error:', error);
-            reject(error);
-          } else {
-            resolve(result);
-          }
-        }
-      ).end(buffer);
+    const signature = await buildSignature(signatureParams, process.env.CLOUDINARY_API_SECRET);
+    const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+    const uploadUrl = `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`;
+
+    const uploadForm = new FormData();
+    uploadForm.append('file', file);
+    uploadForm.append('api_key', process.env.CLOUDINARY_API_KEY);
+    uploadForm.append('timestamp', timestamp.toString());
+    uploadForm.append('signature', signature);
+    uploadForm.append('folder', 'profitness');
+    if (resourceType !== 'image') {
+      uploadForm.append('resource_type', resourceType);
+    }
+
+    const uploadResponse = await fetch(uploadUrl, {
+      method: 'POST',
+      body: uploadForm,
     });
+
+    const uploaded = await uploadResponse.json();
+    if (!uploadResponse.ok) {
+      console.error('Cloudinary upload error:', uploaded);
+      return Response.json(
+        { error: 'Upload failed', message: uploaded?.error?.message || 'Cloudinary upload failed' },
+        { status: 500 }
+      );
+    }
 
     if (!uploaded || !uploaded.secure_url) {
       return Response.json({ 

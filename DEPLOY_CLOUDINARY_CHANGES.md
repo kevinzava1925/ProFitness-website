@@ -1,4 +1,4 @@
-# 🚀 Deploy Cloudinary Changes to Netlify
+# 🚀 Deploy Cloudinary Changes to Cloudflare Pages
 
 ## ⚠️ Current Situation
 
@@ -28,30 +28,30 @@ git commit -m "Switch image uploads from Supabase Storage to Cloudinary for larg
 git push origin main
 ```
 
-### Step 3: Wait for Netlify Auto-Deploy
+### Step 3: Wait for Cloudflare Pages Auto-Deploy
 
-- Netlify will automatically detect the push
+- Cloudflare Pages will automatically detect the push
 - A new build will start (takes 2-3 minutes)
 - Wait for the build to complete
 
 ### Step 4: Verify Deployment
 
-1. **Check Netlify Dashboard**
-   - Go to: https://app.netlify.com
-   - Click on your site → **Deploys** tab
-   - Wait for the latest deploy to show "Published"
+1. **Check Cloudflare Pages Dashboard**
+   - Go to: https://dash.cloudflare.com/
+   - Open your Pages project → **Deployments**
+   - Wait for the latest deploy to show "Success"
 
 2. **Test Image Upload**
-   - Go to: `https://your-site.netlify.app/admin/dashboard`
+   - Go to: `https://your-site.pages.dev/admin/dashboard`
    - Try uploading an image
    - The URL should now be from Cloudinary: `https://res.cloudinary.com/...`
 
 ## ⚠️ Important: Add Cloudinary Environment Variables
 
-**Before the uploads will work**, make sure you've added Cloudinary environment variables in Netlify:
+**Before the uploads will work**, make sure you've added Cloudinary environment variables in Cloudflare Pages:
 
-1. **Go to Netlify Dashboard**
-   - Site settings → Environment variables
+1. **Go to Cloudflare Pages**
+   - Settings → Environment variables
 
 2. **Add These Variables**:
    ```
@@ -62,7 +62,7 @@ git push origin main
    ```
 
 3. **Redeploy After Adding Variables**
-   - Go to Deploys → Trigger deploy → Deploy site
+   - Go to Deployments → Retry deployment
 
 ## 🔍 How to Verify It's Working
 

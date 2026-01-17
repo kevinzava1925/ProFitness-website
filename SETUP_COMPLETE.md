@@ -58,11 +58,12 @@
 
 ### For Production Deployment:
 
-1. **Set environment variables** in Netlify/Vercel (see `ENVIRONMENT_VARIABLES.md`)
+1. **Set environment variables** in Cloudflare Pages (see `ENVIRONMENT_VARIABLES.md`)
 
 2. **Deploy:**
-   - Push to Git (auto-deploy) or
-   - `netlify deploy --prod` / `vercel --prod`
+   - Connect your Git repository in Cloudflare Pages
+   - Build command: `npm run build && npm run pages:build`
+   - Output directory: `.vercel/output/static`
 
 ## Admin Login Credentials
 
