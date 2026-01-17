@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyAuth, requireAdmin } from '@/utils/auth';
 
+export const runtime = 'edge';
+
 export async function GET(request: NextRequest) {
   try {
     const user = await requireAdmin(request);

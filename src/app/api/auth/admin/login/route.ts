@@ -3,6 +3,8 @@ import bcrypt from 'bcryptjs';
 import { generateToken } from '@/utils/jwt';
 import { rateLimit, getClientIP } from '@/utils/rateLimit';
 
+export const runtime = 'edge';
+
 // Admin credentials from environment variables
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'admin@pro-fitness.co.zw';
 const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || '';

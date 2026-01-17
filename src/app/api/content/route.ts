@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/utils/supabase';
 
+export const runtime = 'edge';
+
 // Type for content items from Supabase
 interface ContentRow {
   id: string;

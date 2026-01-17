@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createUser } from '@/utils/users';
 import { generateToken } from '@/utils/jwt';
 
+export const runtime = 'edge';
+
 export async function POST(request: Request) {
   try {
     const { email, password, name } = await request.json();

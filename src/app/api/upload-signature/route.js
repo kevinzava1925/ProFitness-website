@@ -8,6 +8,8 @@ async function sha1Hex(input) {
     .join('');
 }
 
+export const runtime = 'edge';
+
 // Generate upload signature for client-side direct upload
 export async function GET(req) {
   try {

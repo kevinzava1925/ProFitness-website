@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@/utils/supabase';
 
+export const runtime = 'edge';
+
 // Upload file to Supabase Storage
 export async function POST(request: NextRequest) {
   try {

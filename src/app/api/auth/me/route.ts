@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { verifyToken, getTokenFromRequest } from '@/utils/jwt';
 import { findUserById } from '@/utils/users';
 
+export const runtime = 'edge';
+
 export async function GET(request: Request) {
   try {
     const token = getTokenFromRequest(request);
